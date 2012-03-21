@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>TVHeadend viewer</title>
+    <link rel="shortcut icon" href="favicon.ico">
+	<link rel="stylesheet" href="css/jquery.mobile-1.1.0-rc.1.min.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+	<script src="js/jquery-1.7.1.min.js"></script>
+	<script src="js/site.js"></script>
+	<script src="js/jquery.mobile-1.1.0-rc.1.min.js"></script>
+	<script src="js/jqm.page.params.js"></script>
+	<script type="text/javascript" charset="utf-8" src="js/cordova-1.5.0.js"></script>
+</head>
+
+
+<body>
+
+<!-- Start page: #loading -->
+<div data-role="page" id="page_loading">
+
+	<div data-role="content">
+        <h1>Conectando, espere por favor...</h1>
+	</div><!-- /content -->
+	
+</div><!-- /page #loading -->
+
+<!-- Start page: #home -->
+<div data-role="page" id="page_home">
+
+	<div data-role="header" data-position="fixed">
+		<h1>TVHeadend viewer</h1>
+	</div><!-- /header -->
+
+	<div data-role="content">
+        <div class="top">
+            <div id="logo">
+                <!-- <img src="images/logo.jpg" alt="TVHeadend viewer"/>  -->
+            </div>
+            <div id="text">
+            </div>
+        </div> 
+
+        <ul data-role="listview" class="list_mainmenu" data-inset="true">
+            <li><a href="#page_channeltags"> 
+            	<h3>Etiquetas de canal</h3>
+            	</a>
+            </li>           
+            <li><a href="#page_channels" >
+            	<h3>Canales</h3>
+            	</a>
+            </li>
+            <li><a href="#page_epg">
+            	<h3>Guía de programación</h3>
+            	</a> 
+            </li>
+        </ul>
+	</div><!-- /content -->
+
+	<div data-role="footer" data-theme="a" data-position="fixed">
+		<h4>&copy; MAGS</h4>
+	</div><!-- /footer -->
+	
+</div><!-- /page #home -->
+
+<!-- Start page: #channeltags -->
+<div data-role="page" id="page_channeltags" >
+
+	<div data-role="header" data-position="fixed">
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
+		<h1>Etiquetas de canal</h1>
+	</div><!-- /header -->
+
+	<div data-role="content">
+        <ul data-role="listview" class="list_channeltags" data-inset="true">
+            <li><p>No hay datos</p></li>
+        </ul>
+	</div><!-- /content -->
+
+	<div data-role="footer" data-theme="a" data-position="fixed">
+		<h4>&copy; MAGS</h4>
+	</div><!-- /footer -->
+	
+</div><!-- /page #channeltags -->
+
+<!-- Start page: #channels -->
+<div data-role="page" id="page_channels">
+
+	<div data-role="header" data-position="fixed">
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
+		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" class="ui-btn-right" data-theme="b">Recargar</a>
+		<h1 class="lbl_channels">Canales</h1>
+		<h1 class="lbl_channelsByTag" style="display:none"><span class="txt_channeltag">N/A</span></h1>
+		
+		<div data-role="navbar">
+			<ul>
+				<li><a id="btn_sort_number" href="#">Por número</a></li>
+				<li><a id="btn_sort_name" href="#">Por nombre</a></li>
+			</ul>
+		</div><!-- /navbar -->
+		
+	</div><!-- /header -->
+
+	<div data-role="content">
+        <ul data-role="listview" class="list_channels" data-inset="true">
+            <li><p>No hay datos</p></li>
+        </ul>
+	</div><!-- /content -->
+
+	<div data-role="footer" data-theme="a" data-position="fixed">
+		<h4>&copy; MAGS</h4>
+	</div><!-- /footer -->
+	
+</div><!-- /page #channels -->
+
+</body>
+</html>
