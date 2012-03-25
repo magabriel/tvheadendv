@@ -7,7 +7,19 @@ $(document).bind("mobileinit", function(){
 	$.mobile.defaultDialogTransition = 'none';
 	$.mobile.loadingMessage = "Cargando..."; 
 	
-	tvheadend.useProxy = true;
+	tvheadend.useProxy = false;
+	var urlBase = utils.getCurrentBaseUrl();
+	var port = '9981'; // TODO: Parametrizar
+	
+	tvheadend.serverurl = urlBase+':'+port;
+	
+	if (window.location.hostname = 'localhost') {
+		tvheadend.useProxy = true;
+		
+		// Datos específicos del entorno de pruebas
+		tvheadend.serverurl = 'http://192.168.1.201:9981';
+		tvheadend.serverurlProxy = 'http://192.168.1.201/jsonp-proxy.php';
+	}
 	
 	// Cargar datos
 	tvheadend.init();	
@@ -22,58 +34,76 @@ $(document).bind("pagebeforechange", function( event, data ) {
         : null;
 });
 
+$( document ).live( 'timeout',function(event){
+	pageLoading.hide();
+	$.mobile.changePage("#page_error");
+});
+
 var tvheadend = {
 	
-	serverurl : 'http://192.168.1.201:9981',
-		
-	serverurlProxy : 'http://192.168.1.125/web/tvheadendv/tvheadend-proxy.php',
+	serverurl : '',
+	serverurlProxy : '',
 	
+	timeout : 3000,
 	useProxy : false,
 	
 	data : { 
-		loaded : false,
-		loading : false,
+		isLoaded : false,
+		isLoading : false,
+		
 		channelTags : null,
 		channels : null,
 		epg : null,
 		
 		checkLoaded : function () {
-			this.loaded = !!(this.channelTags && this.channels && this.epg); 
-			if (this.loaded) {
-				this.loading = false;
+			this.isLoaded = !!(this.channelTags && this.channels && this.epg); 
+			if (this.isLoaded) {
+				this.isLoading = false;
 				$(document).trigger('dataloaded');
 			}
+		},
+		checkTimeout : function(me) { // El parámetro es la instancia de tvheadend!!!
+			if (!me.data.isLoaded) {
+				$(document).trigger('timeout');
+			};
 		}
 	},
 	
 	init : function() {
-		if (this.data.loaded) {
+		if (this.data.isLoaded) {
 			$(document).trigger('dataloaded');
-		} else if (!this.data.loading) {
+		} else if (!this.data.isLoading) {
 			this.refresh();
 		} 
 	},
 	
 	refresh : function() {
-		this.data.loading = true;
+		this.data.isLoading = true;
+		this.data.isLoaded = false;
+		
+		// El 3er. parámetro es la instancia de tvheadend!!!
+		setTimeout(this.data.checkTimeout, this.timeout, this); 
+		
 		// Cargar todo
 		var me = this;
-		this._sendRequest('channeltags', 'listTags', function(data){ 
-			me.data.channelTags = data; console.debug('LOADED channeltags');});
-		this._sendRequest('channels', 'list', function(data){ 
-			me.data.channels = data;console.debug('LOADED channels');});
-		this._sendRequest('epg', 'start=0&limit=300', function(data){ 
-			me.data.epg = data;console.debug('LOADED epg');});
+		this._sendRequest('channeltags', 'listTags', 
+				function(data){me.data.channelTags = data; });
+		this._sendRequest('channels', 'list', 
+				function(data){me.data.channels = data;});
+		this._sendRequest('epg', 'start=0&limit=200', 
+				function(data){me.data.epg = data;});
 	},
 	
 	_sendRequest : function(api, operation, resultCallback) 
 	{
-		url = this.serverurl+'/'+api;
-		data = 'op='+operation;
+		var url = this.serverurl+'/'+api;
+		var data = 'op='+operation;
+		var dataType = 'json';
 		
 		if (this.useProxy) {
 			url = this.serverurlProxy;
-			data = 'api='+api+'&op='+operation;
+			data = 'url='+encodeURIComponent(this.serverurl)+'&api='+api+'&op='+operation;
+			dataType = 'jsonp';
 		}
 		
 		var me = this;
@@ -81,21 +111,18 @@ var tvheadend = {
 			url: url,
 			data: data,
 			
-			type: "POST",
+			//type: "POST",
 			cache: false,
-			dataType: "jsonp",
-			timeout: 5000,
+			dataType: dataType,
+			timeout: this.timeout,
 			success: function(data) {
 				resultCallback(data);
 				me.data.checkLoaded();
 			},
-			error: function (jqXHR, textStatus)	{
-				alert ('ERROR: '+textStatus);
-			},
-			complete: function() {
-				//
+			error: function (jqXHR, textStatus, errorThrown)	{
+				console.debug('AJAX ERROR: '+textStatus);
 			}
-		});
+		});			
 	},
 
 	findChannelTag : function(identifier)
@@ -114,7 +141,7 @@ var tvheadend = {
 
 	findChannelsByChannelTag : function(channelTag) 
 	{
-		result = [];
+		var result = [];
 		$.each(this.data.channels.entries, function(i, channel) {		
 			tags = channel.tags.split(',');
 			if($.inArray(channelTag, tags) != -1) {
@@ -129,7 +156,7 @@ var tvheadend = {
 	
 	findEpgByChannel : function(channelid)
 	{
-		result = [];
+		var result = [];
 		$.each(this.data.epg.entries, function(i, entry) {		
 			if(entry.channelid == channelid) {
 				result.push(entry);
@@ -142,163 +169,82 @@ var tvheadend = {
 	
 	findEpgCurrentByChannel : function(channelid)
 	{
-		epg = this.findEpgByChannel(channelid);
+		var epg = this.findEpgByChannel(channelid);
 		
-		result = [];
+		var result = null;
+		var currDate = new Date();
 		$.each(epg.entries, function(i, entry) {		
-			currDate = new Date();
-			start = new Date(entry.start * 1000);
-			end = new Date(entry.end * 1000);
+			var start = new Date(entry.start * 1000);
+			var end = new Date(entry.end * 1000);
 			if((start.getTime() <= currDate.getTime()) && (currDate.getTime() <= end.getTime())) {
-				result.push(entry);
+				result = entry;
+				return false;
 			}
 		});
 		
-		result.entries = result;
 		return result;
 	},
-	
+
+	findEpgNextByChannel : function(channelid)
+	{
+		var current = this.findEpgCurrentByChannel(channelid);
+
+		var currStart = new Date();
+		var currEnd = new Date();
+
+		if (current) {
+			currStart = new Date(current.start * 1000);
+			currEnd = new Date(current.end * 1000);
+		}
+		
+		var result = null;
+		var resultStart = new Date();
+		resultStart.setDate(resultStart.getDate() + 1);
+		var currDate = new Date();
+		
+		var epg = this.findEpgByChannel(channelid);
+		
+		$.each(epg.entries, function(i, entry) {		
+			var start = new Date(entry.start * 1000);
+			var end = new Date(entry.end * 1000);
+			if (start.getTime() > currDate.getTime() && start.getTime() >= currEnd.getTime()) {
+				if (start.getTime() < resultStart) {
+					result = entry;
+					resultStart = start.getTime(); 
+				}
+			}
+		});
+		
+		return result;
+	},
+
 	getChannelStreamUrl : function(chid)
 	{	
 		return this.serverurl+'/stream/channelid/'+chid;
 	}
 };
 
-var utils = {
-		
-	getISODateTime: function(d)
-	{
-	    // padding function
-	    var s = function(a,b){return(1e15+a+"").slice(-b);};
-
-	    // default date parameter
-	    if (typeof d === 'undefined'){
-	        d = new Date();
-	    };
-
-	    // return ISO datetime
-	    return d.getFullYear() + '-' +
-	        s(d.getMonth()+1,2) + '-' +
-	        s(d.getDate(),2) + ' ' +
-	        s(d.getHours(),2) + ':' +
-	        s(d.getMinutes(),2) + ':' +
-	        s(d.getSeconds(),2);
-	},
-	
-	getDisplayTime: function(d)
-	{
-	    // padding function
-	    var s = function(a,b){return(1e15+a+"").slice(-b);};
-
-	    // default date parameter
-	    if (typeof d === 'undefined'){
-	        d = new Date();
-	    } else if (typeof d === 'number'){
-	    	d = new Date(d * 1000);
-	    } 
-
-	    // return ISO datetime
-	    return s(d.getHours(),2) + ':' + s(d.getMinutes(),2);
-	},
-	
-	getDisplayDuration: function(duration)
-	{
-		h = Math.floor(duration / 3600);
-		s1 = duration - (h*3600);
-		m = Math.floor(s1 / 60);
-		
-		h = (h < 10) ? '0'+h : h;
-		m = (m < 10) ? '0'+m : m;
-		
-		return h+':'+m;
-	},
-	
-	getDisplayRemaining: function(start, end)
-	{
-		dStart = new Date(start * 1000);
-		dEnd = new Date(end * 1000);
-		dNow = new Date();
-		duration = dEnd - dStart;
-		
-		remaining = duration - (dNow - dStart);
-		
-		return this.getDisplayDuration(remaining / 1000);
-	},
-	
-	getElapsedDuration: function(start, end, scale)
-	{
-		dStart = new Date(start * 1000);
-		dEnd = new Date(end * 1000);
-		dNow = new Date();
-		duration = dEnd - dStart;
-		
-		elapsed = (duration > 0) ? ((dNow - dStart) / duration) : 0; 
-		
-		result = Math.floor(scale * elapsed);
-		
-		return result;
-	},
-	
-	sortByKey : function (array, key, zeroLast) {
-	    return array.sort(function(a, b) {
-
-	    	var keys = key.split(',');
-	    	
-	    	var x='';
-	    	var y='';
-	    	
-	    	var padLength = 20;
-	    	$.each(keys, function(i, key) {		
-	    		
-	    		var keyParts = key.split(':');
-	    		var keyName = keyParts[0];
-	    		var keyType = 's';
-	    		if (keyParts.length > 0) {
-	    			keyType = keyParts[1];
-	    		}
-	    		
-	    		var va = a[keyName].toString();
-	    		var vb = b[keyName].toString();
-
-	    		if (zeroLast) {
-	    			if (va == 0) {
-	    				va = utils.strRepeat('z', padLength); 
-	    			}
-	    			if (vb == 0) {
-	    				vb = utils.strRepeat('z', padLength); 
-	    			}
-	    		};
-	    		
-	    		padA = utils.strRepeat(' ', padLength - va.length);
-	    		padB = utils.strRepeat(' ', padLength - vb.length);
-	    		
-	    		x+= (keyType == 'n') ? padA + va : va + padA ;
-	    		y+= (keyType == 'n') ? padB + vb : vb + padB ;
-	    	});
-	    	
-	    	x = x.toUpperCase();
-	    	y = y.toUpperCase();
-	    		         
-	        return ((x < y) ? -1 : ((x > y) ? 1 : 0));
-	    });
-	},
-	
-	strRepeat : function(str, num )	{
-	    return new Array( isNaN(num) ? 1: num + 1 ).join( str );
-	}
-	
-
-};
-
 /****
  * Página "loading"
  */
 $( '#page_loading' ).live( 'pageinit',function(event){
-	$( document ).one( 'dataloaded',function(event){
+	$( document ).live( 'dataloaded',function(event){
 		$.mobile.changePage("#page_home");
 	});
 });
-	 
+
+/****
+ * Página "error"
+ */
+$( '#page_error' ).live( 'pageinit',function(event){
+	/*
+	 * Preparar el refresco de datos
+	 */
+	$("#page_error #btn_retry").on('click', function() {
+		tvheadend.refresh();
+	});
+});
+
 /****
  * Página "channeltags"
  */
@@ -306,7 +252,7 @@ $( '#page_channeltags' ).live( 'pageinit',function(event){
 		
 	$( '#page_channeltags' ).live( 'pagebeforeshow',function(event){		
 		
-		if (!tvheadend.data.loaded) {
+		if (!tvheadend.data.isLoaded) {
 			$.mobile.changePage("#page_loading");
 			return;
 		}
@@ -366,10 +312,12 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 	 */
 	function fillPage(sort)
 	{
-		if (!tvheadend.data.loaded) {
+		if (!tvheadend.data.isLoaded) {
 			$.mobile.changePage("#page_loading");
 			return;
 		}
+		
+		pageLoading.show();
 		
 	    if ($.mobile.pageData && $.mobile.pageData.channeltag){
 
@@ -379,9 +327,9 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 	    	$('.txt_channeltag').html(channelTag.name);
 
 	    	channels = tvheadend.findChannelsByChannelTag($.mobile.pageData.channeltag);
-	    	fillChannelsList(channels, sort);	    	
+	    	setTimeout(fillChannelsList, 0, channels, sort);	    	
 	    } else {
-	    	fillChannelsList(tvheadend.data.channels, sort);
+	    	setTimeout(fillChannelsList, 0, tvheadend.data.channels, sort);
 	    	$("#page_channels h1").hide();
 	    	$("h1.lbl_channels").show();
 	    };		
@@ -392,7 +340,7 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 	 */
 	function fillChannelsList(channels, sort)
 	{
-		$(".list_channels").empty();
+		pageLoading.show();
 		
 		sort = (sort == null) ? 'number' : sort;
 		
@@ -407,38 +355,238 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 			$("#page_channels #btn_sort_name").addClass('ui-btn-active');
 		}
 		
-		$.each(channels.entries, function(i, channel) {		
-			
-			var epg = '';
-			var epgEntries = tvheadend.findEpgCurrentByChannel(channel.chid);
-			$.each(epgEntries, function(i, entry){
-				epg+= '<h4>'+entry.title+'</h4>';
-				epg+= '<h5>'+
-						'<span class="epg-duration">['+utils.getDisplayDuration(entry.duration)+']</span>'+
-						'<span class="epg-start">'+utils.getDisplayTime(entry.start)+'</span>'+
-						'<span class="epg-bar">'+
-						'<span class="epg-barc" style="width:'+utils.getElapsedDuration(entry.start, entry.end, 80)+'px;">&nbsp;'+
-						'</span></span>' +
-						'<span class="epg-end">'+utils.getDisplayTime(entry.end)+'</span>'+
-						'<span class="epg-remain">['+utils.getDisplayRemaining(entry.start, entry.end)+']</span>'+
-						'</h5>';
+		// Variable en la que acumularemos todos los items a añadir a la lista
+		var listItems = [];
+		
+		// Definimos un objeto función que añade a la variable un aray de items 
+		channelsListFillAll = function(channels) {
+			$.each(channels.entries, function(i, channel) {		
+				
+				var epg = '';
+				
+				var epgEntry = tvheadend.findEpgCurrentByChannel(channel.chid);
+				if (epgEntry) {
+					epg+= '<h4>'+epgEntry.title+'</h4>';
+					epg+= '<h5>'+
+							'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
+							'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
+							'<span class="epg-bar">'+
+							'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
+							'</span></span>' +
+							'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
+							'<span class="epg-remain">['+utils.getDisplayRemaining(epgEntry.start, epgEntry.end)+']</span>'+
+							'</h5>';
+				};
+				
+				var epgEntry = tvheadend.findEpgNextByChannel(channel.chid);
+				if (epgEntry) {
+					epg+= '<h4>'+epgEntry.title+'</h4>';
+					epg+= '<h5>'+
+							'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
+							'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
+							'<span class="epg-bar">'+
+							'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
+							'</span></span>' +
+							'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
+							'</h5>';
+				};
+				
+				channel.number = channel.number ? channel.number : '';
+				
+				item = 	'<a href="'+tvheadend.getChannelStreamUrl(channel.chid)+'">'+
+						'<h3 class="channel-name"><span class="channel-number">'+channel.number+'</span>'+'&nbsp;'+channel.name+'</h3>'+
+						epg +
+						'</a>';
+				
+				listItems.push('<li>'+item+'</li>');
 			});
-			
-			channel.number = channel.number ? channel.number : '';
-			
-			item = 	'<li>'+
-					'<a href="'+tvheadend.getChannelStreamUrl(channel.chid)+'">'+
-					'<h3 class="channel-name"><span class="channel-number">'+channel.number+'</span>'+'&nbsp;'+channel.name+'</h3>'+
-					epg +
-					'</a>'+
-					'</li>';
-			$(".list_channels").append(item);
+		};
+		
+		// Definimos un objeto función que finaliza la lista 
+		channelsWrapUp = function () {
+			$('#page_channels .list_channels').html(listItems.join(''));
+			$('#page_channels .list_channels').listview('refresh');
+			pageLoading.hide();
+		};
+		
+		// Usaremos una cola de tareas para que la GUI no se congele 
+		tasks = [];
+
+		size = 1; // Tamaño del subarray de items, ajustable
+		
+		// Crear una tarea por cada subarray
+		$.each(channels.entries, function(i, channelEntry) {
+			if ((i % size) == 0) {
+				slice = channels.entries.slice(i, i+size);
+				slice.entries = slice;
+				tasks.push([channelsListFillAll, slice]);
+			}
 		});
 		
-		pageLoading.hide();
-		$('.list_channels').listview('refresh');
+		// Crear una tarea para finalizar la lista
+		tasks.push(channelsWrapUp);
+
+		// Ejecuar todas las tareas en orden
+		utils.runTasks(tasks);
 	}    	
 
+});
+
+/****
+ * Página "epg"
+ */
+$( '#page_epg' ).live( 'pageinit',function(event){
+
+	/*
+	 * Relleno inicial de la ventana 
+	 */
+	$("#page_epg").live("pagebeforeshow", function(e, data){
+		fillPage();
+	});
+	
+	/*
+	 * Ordenación y relleno
+	 */
+	$("#page_epg #btn_sort_date").on('click', function() {
+		fillPage('date');
+	});
+	$("#page_epg #btn_sort_channel").on('click', function() {
+		fillPage('channel');
+	});
+	
+	/*
+	 * Preparar el refresco de datos
+	 */
+	$("#page_epg #btn_refresh").on('click', function() {
+		$( document ).one( 'dataloaded',function(event){
+			fillPage();
+		});
+		pageLoading.show();
+		tvheadend.refresh();
+	});
+	
+	/*
+	 * Realiza el relleno de la ventana
+	 */
+	function fillPage(sort)
+	{
+		if (!tvheadend.data.isLoaded) {
+			$.mobile.changePage("#page_loading");
+			return;
+		}
+		
+		pageLoading.show();
+		setTimeout(fillEpgList, 0, tvheadend.data.epg, sort);
+	};
+
+	/*
+	 * Rellenar la lista de epg
+	 */
+	function fillEpgList(epglist, sort)
+	{
+		pageLoading.show();
+
+		sort = (sort == null) ? 'date' : sort;
+
+		$("#page_epg #btn_sort_date").removeClass('ui-btn-active');
+		$("#page_epg #btn_sort_channel").removeClass('ui-btn-active');
+
+		if (sort == 'date') {
+			epglist.entries = utils.sortByKey(epglist.entries, 'start:n,end:n', true);
+			$("#page_epg #btn_sort_date").addClass('ui-btn-active');
+		} else if (sort == 'channel') {
+			epglist.entries = utils.sortByKey(epglist.entries, 'channel:s,start:n', true);
+			$("#page_epg #btn_sort_channel").addClass('ui-btn-active');
+		};
+		
+		// Variable en la que acumularemos todos los items a añadir a la lista
+		var listItems = [];
+		
+		// Canal actual (para ordenación por canal)
+		var currChannel = ''; 
+		
+		// Definimos un objeto función que añade a la variable un aray de items 
+		epgListFillAll = function(epglist) {
+			
+			$.each(epglist.entries, function(i, epgEntry) {
+				var epg = '';
+				
+				if (sort == 'channel') {
+					if (epgEntry.channelid != currChannel) {
+						listItems.push('<li data-role="list-divider">'+epgEntry.channel+'</li>');
+						currChannel = epgEntry.channelid;
+					}
+				}
+					
+				var epgEntryCurrent = tvheadend.findEpgCurrentByChannel(epgEntry.channelid);
+				if (epgEntryCurrent && epgEntryCurrent.id == epgEntry.id) {
+					epg+= '<h4>'+epgEntry.title+'</h4>';
+					epg+= '<h5>'+
+					'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
+					'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
+					'<span class="epg-bar">'+
+					'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
+					'</span></span>' +
+					'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
+					'<span class="epg-remain">['+utils.getDisplayRemaining(epgEntry.start, epgEntry.end)+']</span>'+
+					'</h5>';
+				} else {
+					epg+= '<h4>'+epgEntry.title+'</h4>';
+					epg+= '<h5>'+
+					'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
+					'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
+					'<span class="epg-bar">'+
+					'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
+					'</span></span>' +
+					'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
+					'</h5>';
+				};
+
+				if (sort == 'channel') {
+					item = 
+						'<a href="'+tvheadend.getChannelStreamUrl(epgEntry.channelid)+'">'+
+						epg +
+						'</a>';
+				} else { // 'time'
+					item = 
+						'<a href="'+tvheadend.getChannelStreamUrl(epgEntry.channelid)+'">'+
+						'<h3 class="channel-name">'+epgEntry.channel+'</h3>'+
+						epg +
+						'</a>';
+				}
+
+				listItems.push('<li>'+item+'</li>');
+			});
+
+		}; 	
+
+		// Definimos un objeto función que finaliza la lista 
+		epgWrapUp = function () {
+			$("#page_epg .list_epg").html(listItems.join(''));
+			$('#page_epg .list_epg').listview('refresh');
+			pageLoading.hide();
+		};
+		
+		// Usaremos una cola de tareas para que la GUI no se congele 
+		tasks = [];
+
+		size = 1; // Tamaño del subarray de items, ajustable
+		
+		// Crear una tarea por cada subarray
+		$.each(epglist.entries, function(i, epgEntry) {
+			if ((i % size) == 0) {
+				slice = epglist.entries.slice(i, i+size);
+				slice.entries = slice;
+				tasks.push([epgListFillAll, slice]);
+			}
+		});
+		
+		// Crear una tarea para finalizar la lista
+		tasks.push(epgWrapUp);
+
+		// Ejecuar todas las tareas en orden
+		utils.runTasks(tasks);
+	};
 });
 
 var pageLoading = {
@@ -446,29 +594,21 @@ var pageLoading = {
 	show: function()
 		{
 			$("body").append('<div class="pageLoading"/>');
-			setTimeout('$.mobile.showPageLoadingMsg()', 5);                      
+			//setTimeout('$.mobile.showPageLoadingMsg', 5);
 			$.mobile.showPageLoadingMsg();
-			//setTimeout('pageLoading.hide()', 5000);
+			setTimeout('pageLoading.hide()', 15000);
 		},
 
 	hide: function()
 		{
 			$(".pageLoading").remove();
-			setTimeout('$.mobile.hidePageLoadingMsg()', 5);                      
-			$('body').removeClass('ui-loading');
+			//setTimeout('$.mobile.hidePageLoadingMsg', 5);
+			$.mobile.hidePageLoadingMsg();
+			//$('body').removeClass('ui-loading');
 		},
 };
  
-/*
- * Splash de carga inicial
- */
-$(function() {
-  //setTimeout(hideSplash, 2000);
-});
 
-function hideSplash() {
-  $.mobile.changePage("#page_home", "slide");
-}
 
 
 

@@ -9,6 +9,7 @@
 	<link rel="stylesheet" href="css/jquery.mobile-1.1.0-rc.1.min.css" />
     <link rel="stylesheet" href="css/styles.css" />
 	<script src="js/jquery-1.7.1.min.js"></script>
+	<script src="js/utils.js"></script>
 	<script src="js/site.js"></script>
 	<script src="js/jquery.mobile-1.1.0-rc.1.min.js"></script>
 	<script src="js/jqm.page.params.js"></script>
@@ -21,10 +22,32 @@
 <!-- Start page: #loading -->
 <div data-role="page" id="page_loading">
 
+	<div data-role="header" data-position="fixed">
+		<h1>TVHeadend viewer</h1>
+	</div><!-- /header -->
+	
 	<div data-role="content">
-        <h1>Conectando, espere por favor...</h1>
+        <h3>Conectando, espere por favor...</h3>
 	</div><!-- /content -->
 	
+	<div data-role="footer" data-theme="a" data-position="fixed">
+		<h4>&copy; MAGS</h4>
+	</div><!-- /footer -->
+		
+</div><!-- /page #loading -->
+
+<!-- Start page: #error -->
+<div data-role="dialog" id="page_error">
+
+	<div data-role="header" data-position="fixed">
+		<h1>TVHeadend viewer</h1>
+	</div><!-- /header -->
+	
+	<div data-role="content" data-theme="c">
+        <h3>Se ha producido un error en la conexión con el servidor.</h3>
+        <a href="#page_loading" id="btn_retry" data-role="button" data-inline="true">Reintentar</a> 
+	</div><!-- /content -->
+		
 </div><!-- /page #loading -->
 
 <!-- Start page: #home -->
@@ -90,7 +113,7 @@
 
 	<div data-role="header" data-position="fixed">
 		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
-		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" class="ui-btn-right" data-theme="b">Recargar</a>
+		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" class="ui-btn-right" data-theme="b">Refrescar</a>
 		<h1 class="lbl_channels">Canales</h1>
 		<h1 class="lbl_channelsByTag" style="display:none"><span class="txt_channeltag">N/A</span></h1>
 		
@@ -115,5 +138,33 @@
 	
 </div><!-- /page #channels -->
 
+<!-- Start page: #epg -->
+<div data-role="page" id="page_epg">
+
+	<div data-role="header" data-position="fixed">
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
+		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" class="ui-btn-right" data-theme="b">Refrescar</a>
+		<h1>Guía de programación</h1>
+		
+		<div data-role="navbar">
+			<ul>
+				<li><a id="btn_sort_date" href="#">Por día/hora</a></li>
+				<li><a id="btn_sort_channel" href="#">Por canal</a></li>
+			</ul>
+		</div><!-- /navbar -->
+		
+	</div><!-- /header -->
+
+	<div data-role="content">
+        <ul data-role="listview" class="list_epg" data-inset="true">
+            <li><p>No hay datos</p></li>
+        </ul>
+	</div><!-- /content -->
+
+	<div data-role="footer" data-theme="a" data-position="fixed">
+		<h4>&copy; MAGS</h4>
+	</div><!-- /footer -->
+	
+</div><!-- /page #epg -->
 </body>
 </html>
