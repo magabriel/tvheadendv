@@ -7,20 +7,22 @@ $(document).bind("mobileinit", function(){
 	$.mobile.defaultDialogTransition = 'none';
 	$.mobile.loadingMessage = "Cargando..."; 
 	
-	tvheadend.useProxy = false;
-	var urlBase = utils.getCurrentBaseUrl();
+	// Siempre usamos el proxy para poder usan JSONP (restricción "same-domain")
+	tvheadend.useProxy = true;
+	
+	// Datos que necesitamos
+	var urlBase = location.protocol + '//' + location.hostname;
 	var port = '9981'; // TODO: Parametrizar
 	
-	tvheadend.serverurl = urlBase+':'+port;
-	
-	if (window.location.hostname = 'localhost') {
-		tvheadend.useProxy = true;
-		
-		// Datos específicos del entorno de pruebas
-		tvheadend.serverurl = 'http://192.168.1.201:9981';
-		tvheadend.serverurlProxy = 'http://192.168.1.201/jsonp-proxy.php';
+	// Datos específicos del entorno de pruebas
+	if (window.location.hostname == 'localhost') {
+		urlBase = 'http://192.168.1.201';
 	}
 	
+	// Dirección del servidor de tvheadend y del proxy JSONP
+	tvheadend.serverurl = urlBase+':'+port;
+	tvheadend.serverurlProxy = urlBase + '/jsonp-proxy.php';
+		
 	// Cargar datos
 	tvheadend.init();	
 });
@@ -99,11 +101,13 @@ var tvheadend = {
 		var url = this.serverurl+'/'+api;
 		var data = 'op='+operation;
 		var dataType = 'json';
+		var type = 'POST';
 		
 		if (this.useProxy) {
 			url = this.serverurlProxy;
 			data = 'url='+encodeURIComponent(this.serverurl)+'&api='+api+'&op='+operation;
 			dataType = 'jsonp';
+			type = 'GET';
 		}
 		
 		var me = this;
@@ -111,7 +115,7 @@ var tvheadend = {
 			url: url,
 			data: data,
 			
-			//type: "POST",
+			type: type,
 			cache: false,
 			dataType: dataType,
 			timeout: this.timeout,

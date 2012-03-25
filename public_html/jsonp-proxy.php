@@ -1,15 +1,14 @@
 <?php
 
-$jsonp = new JsonpProxy('http://mediacenter:9981');
+$jsonp = new JsonpProxy();
 return $jsonp->process();
 
 class JsonpProxy
 {
 	protected $serverUrl;
 	
-	public function __construct($serverUrl)
+	public function __construct()
 	{
-		$this->serverUrl = $serverUrl;
 	}
 	
 	public function process()
@@ -26,6 +25,16 @@ class JsonpProxy
 			unset($params['callback']);
 		} else {
 			echo "ERROR: falta parámetro jsoncallback\n";
+			header("HTTP/1.0 400 Bad request");
+			return;
+		}
+		
+		// Recoger la url del servidor real
+		if (isset($params['url'])) {
+			$this->serverUrl = $params['url'];
+			unset($params['url']);
+		} else {
+			echo "ERROR: falta parámetro url\n";
 			header("HTTP/1.0 400 Bad request");
 			return;
 		}
