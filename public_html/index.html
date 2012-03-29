@@ -1,4 +1,10 @@
 <!DOCTYPE html>
+<!--  
+ * ----------------------------------------------------------------------------
+ * Copyright (c) 2012 Miguel Angel Gabriel. All Rights Reserved. 
+ * Released under the GNU GPL V3. 
+ * ----------------------------------------------------------------------------
+ -->
 <html>
 
 <head>
@@ -8,12 +14,19 @@
     <link rel="shortcut icon" href="favicon.ico">
 	<link rel="stylesheet" href="css/jquery.mobile-1.1.0-rc.1.min.css" />
     <link rel="stylesheet" href="css/styles.css" />
-	<script src="js/jquery-1.7.1.min.js"></script>
+	
+	<script src="js/jquery/jquery-1.7.1.min.js"></script>
+	<script src="js/jquery/jquery.dst.js"></script>
+	<script src="js/jquery/jquery.localize.js"></script>
 	<script src="js/utils.js"></script>
 	<script src="js/site.js"></script>
-	<script src="js/jquery.mobile-1.1.0-rc.1.min.js"></script>
-	<script src="js/jqm.page.params.js"></script>
-	<script type="text/javascript" charset="utf-8" src="js/cordova-1.5.0.js"></script>
+	<script src="js/jquery/jquery.mobile-1.1.0-rc.1.min.js"></script>
+	<script src="js/jquery/jqm.page.params.js"></script>
+	
+	
+	<!-- PhoneGap when ready
+	<script type="text/javascript" charset="utf-8" src="js/phonegap/cordova-1.5.0.js"></script>
+	 -->
 </head>
 
 
@@ -27,7 +40,7 @@
 	</div><!-- /header -->
 	
 	<div data-role="content">
-        <h3>Conectando, espere por favor...</h3>
+        <h3 rel="localize[connecting]">Connecting, please wait...</h3>
 	</div><!-- /content -->
 	
 	<div data-role="footer" data-theme="a" data-position="fixed">
@@ -43,9 +56,16 @@
 		<h1>TVHeadend viewer</h1>
 	</div><!-- /header -->
 	
-	<div data-role="content" data-theme="c">
-        <h3>Se ha producido un error en la conexión con el servidor.</h3>
-        <a href="#page_loading" id="btn_retry" data-role="button" data-inline="true">Reintentar</a> 
+	<div data-role="content" data-theme="e">
+        <p rel="localize[connection-error]">An error has been detected during connection. May be you need to check your configuration.</p>
+        
+	<fieldset class="ui-grid-a">
+		<div class="ui-block-a"><a href="#page_loading" id="btn_retry" 
+		     data-role="button" data-theme="b" rel="localize[retry]">Retry</a></div> 
+		<div class="ui-block-b"><a href="#page_config" id="btn_config" 
+		      data-role="button" rel="localize[configure]">Configure</a></div>
+	</fieldset>
+        
 	</div><!-- /content -->
 		
 </div><!-- /page #loading -->
@@ -55,6 +75,8 @@
 
 	<div data-role="header" data-position="fixed">
 		<h1>TVHeadend viewer</h1>
+		<a href="#page_config" data-role="button" data-icon="gear" 
+		   class="ui-btn-right" data-theme="b" rel="localize[configure]">Config</a>
 	</div><!-- /header -->
 
 	<div data-role="content">
@@ -62,21 +84,23 @@
             <div id="logo">
                 <!-- <img src="images/logo.jpg" alt="TVHeadend viewer"/>  -->
             </div>
-            <div id="text">
-            </div>
+            <div id="text"></div>
         </div> 
 
         <ul data-role="listview" class="list_mainmenu" data-inset="true">
-            <li><a href="#page_channeltags"> 
-            	<h3>Etiquetas de canal</h3>
+            <li><a href="#page_channeltags">
+            		<img src="images/channeltags.png" alt="" /> 
+            		<h3 rel="localize[channel-tags]">Channel tags</h3>
             	</a>
             </li>           
             <li><a href="#page_channels" >
-            	<h3>Canales</h3>
+            		<img src="images/channels.png" alt="" />
+            		<h3 rel="localize[channels]">Channels</h3>
             	</a>
             </li>
             <li><a href="#page_epg">
-            	<h3>Guía de programación</h3>
+            		<img src="images/epg.png" alt="" />
+            		<h3 rel="localize[guide]">Guide</h3>
             	</a> 
             </li>
         </ul>
@@ -89,16 +113,16 @@
 </div><!-- /page #home -->
 
 <!-- Start page: #channeltags -->
-<div data-role="page" id="page_channeltags" >
+<div data-role="page" id="page_channeltags">
 
 	<div data-role="header" data-position="fixed">
-		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
-		<h1>Etiquetas de canal</h1>
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back" rel="localize[back]">Back</a>
+		<h1 rel="localize[channel-tags]">Channel tags</h1>
 	</div><!-- /header -->
 
 	<div data-role="content">
         <ul data-role="listview" class="list_channeltags" data-inset="true">
-            <li><p>No hay datos</p></li>
+            <li><p rel="localize[no-data]">No data</p></li>
         </ul>
 	</div><!-- /content -->
 
@@ -112,15 +136,16 @@
 <div data-role="page" id="page_channels">
 
 	<div data-role="header" data-position="fixed">
-		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
-		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" class="ui-btn-right" data-theme="b">Refrescar</a>
-		<h1 class="lbl_channels">Canales</h1>
-		<h1 class="lbl_channelsByTag" style="display:none"><span class="txt_channeltag">N/A</span></h1>
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back" rel="localize[back]">Back</a>
+		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" 
+		   class="ui-btn-right" data-theme="b", rel="localize[refresh]">Refresh</a>
+		<h1 class="lbl_channels" rel="localize[channels]">Channels</h1>
+		<h1 class="lbl_channelsByTag" style="display:none"><span class="txt_channeltag" rel="localize[n-a]">N/A</span></h1>
 		
 		<div data-role="navbar">
 			<ul>
-				<li><a id="btn_sort_number" href="#">Por número</a></li>
-				<li><a id="btn_sort_name" href="#">Por nombre</a></li>
+				<li><a id="btn_sort_number" href="#" rel="localize[by-number]">By number</a></li>
+				<li><a id="btn_sort_name" href="#" rel="localize[by-name]">By name</a></li>
 			</ul>
 		</div><!-- /navbar -->
 		
@@ -128,7 +153,7 @@
 
 	<div data-role="content">
         <ul data-role="listview" class="list_channels" data-inset="true">
-            <li><p>No hay datos</p></li>
+            <li><p rel="localize[no-data]">No data</p></li>
         </ul>
 	</div><!-- /content -->
 
@@ -142,14 +167,15 @@
 <div data-role="page" id="page_epg">
 
 	<div data-role="header" data-position="fixed">
-		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back">Volver</a>
-		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" class="ui-btn-right" data-theme="b">Refrescar</a>
-		<h1>Guía de programación</h1>
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back" rel="localize[back]">Back</a>
+		<a href="#" id="btn_refresh" data-role="button" data-icon="refresh" 
+		   class="ui-btn-right" data-theme="b" rel="localize[refresh]">Refresh</a>
+		<h1 rel="localize[guide]">Guide</h1>
 		
 		<div data-role="navbar">
 			<ul>
-				<li><a id="btn_sort_date" href="#">Por día/hora</a></li>
-				<li><a id="btn_sort_channel" href="#">Por canal</a></li>
+				<li><a id="btn_sort_date" href="#" rel="localize[by-date-time]">By date/time</a></li>
+				<li><a id="btn_sort_channel" href="#" rel="localize[by-channel]">By channel</a></li>
 			</ul>
 		</div><!-- /navbar -->
 		
@@ -157,7 +183,7 @@
 
 	<div data-role="content">
         <ul data-role="listview" class="list_epg" data-inset="true">
-            <li><p>No hay datos</p></li>
+            <li><p rel="localize[no-data]">No data</p></li>
         </ul>
 	</div><!-- /content -->
 
@@ -166,5 +192,48 @@
 	</div><!-- /footer -->
 	
 </div><!-- /page #epg -->
+
+<!-- Start page: #config -->
+<div data-role="page" id="page_config">
+
+	<div data-role="header" data-position="fixed">
+		<a href="#" data-role="button" data-icon="arrow-l" data-rel="back" rel="localize[back]">Back</a>
+		<h1 rel="localize[configuration]">Configuration</h1>
+	</div><!-- /header -->
+
+	<div data-role="content">
+		<form action="#" id="form_config">
+			<div data-role="fieldcontain">
+                <label for="fld_serverip" rel="localize[tvheadend-ip]">Tvheadend IP:</label>
+                <input type="text" name="fld_serverip" id="fld_serverip" value="" />
+            </div>
+            <div data-role="fieldcontain">
+                <label for="fld_serverport" rel="localize[port]">Port:</label>
+                <input type="number" name="fld_serverport" id="fld_serverport" value="" />
+            </div>
+            <div data-role="fieldcontain">
+                <label for="fld_linktype" rel="localize[link-type]">Link type:</label>
+                <select name="fld_linktype" id="fld_linktype">
+                	<option value="stream">Stream</option>
+                	<option value="playlist">Playlist</option>
+                </select>
+            </div>
+                        
+         	<fieldset class="ui-grid-a">
+            	<div class="ui-block-a"><a href="#" id="btn_default" 
+            	     data-role="button" data-theme="a" rel="localize[defaults]">Defaults</a></div>
+				<div class="ui-block-b"><button type="submit" data-theme="b" 
+				     rel="localize[save]">Save</button></div>
+           	</fieldset>
+           	
+           	<div id="message" class="message" style="display:none" ></div>
+		</form>
+	</div><!-- /content -->
+
+	<div data-role="footer" data-theme="a" data-position="fixed">
+		<h4>&copy; MAGS</h4>
+	</div><!-- /footer -->
+	
+</div><!-- /page #config -->
 </body>
 </html>

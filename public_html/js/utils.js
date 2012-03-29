@@ -1,3 +1,9 @@
+/*
+ * ----------------------------------------------------------------------------
+ * Copyright (c) 2012 Miguel Angel Gabriel. All Rights Reserved. 
+ * Released under the GNU GPL V3. 
+ * ----------------------------------------------------------------------------
+ */
 var utils = {
 		
 	getISODateTime: function(d)
@@ -153,6 +159,17 @@ var utils = {
 		port = location.port ? ':'+location.port : '';
 		ret = location.protocol + '//' + location.hostname + port + location.pathname;
 		return ret;
+	},
+	
+	isNumber : function(n) {
+		return !isNaN(parseFloat(n)) && isFinite(n);
 	}
+
 };
 
+(function($){
+	// Several mini plugins
+	$.fn.reverse = [].reverse;
+	$.fn.sort = [].sort;
+	$.fn.shift = [].shift;
+})(jQuery);

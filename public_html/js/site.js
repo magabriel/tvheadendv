@@ -1,34 +1,42 @@
 /*
- * Configuración
+ * ----------------------------------------------------------------------------
+ * Copyright (c) 2012 Miguel Angel Gabriel. All Rights Reserved. 
+ * Released under the GNU GPL V3. 
+ * ----------------------------------------------------------------------------
+ */
+
+/*************************************************************
+ * Initialization
+ *************************************************************
+ */
+
+/*
+ * Setup when jQuery ready
+ */
+$(function(){
+	// Setup localization
+	locOptions = { pathPrefix : "js", skipLanguage: /^en/ };
+	$("[rel*=localize]").localize("lang", locOptions);
+});
+
+/*
+ * Setup mobile
  */
 $(document).bind("mobileinit", function(){
-	//defaultPageTransition : "slide"
+
 	$.mobile.defaultPageTransition = 'none';
 	$.mobile.defaultDialogTransition = 'none';
-	$.mobile.loadingMessage = "Cargando..."; 
 	
-	// Siempre usamos el proxy para poder usan JSONP (restricción "same-domain")
+	// Use proxy if we are not a native app ("same-domain" restriction)
+	// TODO: This property must be set to false when this becomes a PhoneGap app.
 	tvheadend.useProxy = true;
 	
-	// Datos que necesitamos
-	var urlBase = location.protocol + '//' + location.hostname;
-	var port = '9981'; // TODO: Parametrizar
-	
-	// Datos específicos del entorno de pruebas
-	if (window.location.hostname == 'localhost') {
-		urlBase = 'http://192.168.1.201';
-	}
-	
-	// Dirección del servidor de tvheadend y del proxy JSONP
-	tvheadend.serverurl = urlBase+':'+port;
-	tvheadend.serverurlProxy = urlBase + '/jsonp-proxy.php';
-		
-	// Cargar datos
+	// Load data
 	tvheadend.init();	
 });
 
 /*
- * Recoger los datos enviados a la ventana
+ * Retrieve the parameters sent to any window (see jqm.page.params.js)
  */
 $(document).bind("pagebeforechange", function( event, data ) {
     $.mobile.pageData = (data && data.options && data.options.pageData)
@@ -36,27 +44,53 @@ $(document).bind("pagebeforechange", function( event, data ) {
         : null;
 });
 
-$( document ).live( 'timeout',function(event){
+/*
+ * Timeout event (from ajax)
+ */
+$(document).live( 'timeout',function(event){
 	pageLoading.hide();
 	$.mobile.changePage("#page_error");
 });
 
+/*************************************************************
+ * Tvheadend handler object
+ *************************************************************
+ */
 var tvheadend = {
 	
-	serverurl : '',
-	serverurlProxy : '',
+	// Defaults (autodetected)
+	defaultServerProtocol : '',
+	defaultServerIP : '',
+	defaultServerPort : '',
+	defaultLinkType : '',
+		
+	// Actual values (when set)
+	serverProtocol : '',
+	serverIP : '',
+	serverPort : '',
+	linkType : '',
+	
+	serverUrl : '',
+	serverUrlProxy : '',
 	
 	timeout : 3000,
 	useProxy : false,
 	
+	/*
+	 * Data object
+	 */
 	data : { 
 		isLoaded : false,
 		isLoading : false,
 		
+		// Data repositories
 		channelTags : null,
 		channels : null,
 		epg : null,
 		
+		/*
+		 * Called after data loaded
+		 */
 		checkLoaded : function () {
 			this.isLoaded = !!(this.channelTags && this.channels && this.epg); 
 			if (this.isLoaded) {
@@ -64,29 +98,51 @@ var tvheadend = {
 				$(document).trigger('dataloaded');
 			}
 		},
-		checkTimeout : function(me) { // El parámetro es la instancia de tvheadend!!!
+		/*
+		 * Called after load timeout.
+		 * The argument is this tvheadend object instance.
+		 */
+		checkTimeout : function(me) { 
 			if (!me.data.isLoaded) {
 				$(document).trigger('timeout');
 			};
 		}
 	},
 	
-	init : function() {
+	/*
+	 * Initialization
+	 */
+	init : function(reset) {
+		
+		if (reset) {
+			this.data.isLoaded = false;
+			this.data.isLoading = false;
+		}
+		
+		// Ensure we have the server URL
+		this._checkserverUrl(reset);
+		
+		// Use the already loaded data or retrieve it from server
 		if (this.data.isLoaded) {
 			$(document).trigger('dataloaded');
 		} else if (!this.data.isLoading) {
 			this.refresh();
 		} 
+		
+		$(document).trigger('initdone');
 	},
 	
+	/*
+	 * Refresh all data
+	 */
 	refresh : function() {
 		this.data.isLoading = true;
 		this.data.isLoaded = false;
 		
-		// El 3er. parámetro es la instancia de tvheadend!!!
+		// 3rd. parameter is the tvheadend object instance!!!
 		setTimeout(this.data.checkTimeout, this.timeout, this); 
 		
-		// Cargar todo
+		// Load everything
 		var me = this;
 		this._sendRequest('channeltags', 'listTags', 
 				function(data){me.data.channelTags = data; });
@@ -96,16 +152,81 @@ var tvheadend = {
 				function(data){me.data.epg = data;});
 	},
 	
+	/*
+	 * Check if the server url is populated
+	 */
+	_checkserverUrl : function(reset) {
+		
+		if (this.serverUrl && !reset) {
+			// Already set 
+			return;
+		}
+		
+		// Set defaults
+		this.defaultServerProtocol = location.protocol;
+		this.defaultServerIP = location.hostname;
+		this.defaultServerPort = '9981';	
+		this.defaultLinkType = 'stream';
+		
+		// Get from DST
+		dstServerIP = $.DSt.get('serverip');
+		dstServerPort = $.DSt.get('serverport');
+		dstLinkType = $.DSt.get('linktype');
+		
+		// Set saved values or defaults
+		if (dstServerIP) {
+			this.serverIP = dstServerIP;
+		} else {
+			this.serverIP = this.defaultServerIP;
+		}
+		
+		if (dstServerPort) {
+			this.serverPort = dstServerPort;
+		} else {
+			this.serverPort = this.defaultServerPort;	
+		}
+
+		if (dstLinkType) {
+			this.linkType = dstLinkType;
+		} else {
+			this.linkType = this.defaultLinkType;	
+		}
+
+		// Only default protocol
+		this.serverProtocol = this.defaultServerProtocol;
+		
+		// Default tvheadend server and proxy url
+		var urlBase = this.serverProtocol + '//' + this.serverIP;
+		this.serverUrl = urlBase+':'+this.serverPort;
+
+		// Create the proxy url
+		this.serverUrlProxy = location.protocol+'//'+location.hostname+location.pathname + 'jsonp-proxy.php';
+		
+	},
+	
+	/*
+	 * Send AJAX request to tvheadend
+	 */
 	_sendRequest : function(api, operation, resultCallback) 
 	{
-		var url = this.serverurl+'/'+api;
+		/*
+		 * Default ajax parameters. 
+		 * They can only be used from a native app because the "same origin"
+		 * restriction doesn't apply. NOTE: Even if this mobile web app is in the same server
+		 * the restriction would be active because of the different port (80 vs. 9981)
+		 */
+		var url = this.serverUrl+'/'+api;
 		var data = 'op='+operation;
 		var dataType = 'json';
 		var type = 'POST';
 		
+		/*
+		 * If we are using the ajax proxy because we are not in the same domain than the 
+		 * tvheadend server, we must use JSONP instead of plain old JSON.    
+		 */
 		if (this.useProxy) {
-			url = this.serverurlProxy;
-			data = 'url='+encodeURIComponent(this.serverurl)+'&api='+api+'&op='+operation;
+			url = this.serverUrlProxy;
+			data = 'url='+encodeURIComponent(this.serverUrl)+'&api='+api+'&op='+operation;
 			dataType = 'jsonp';
 			type = 'GET';
 		}
@@ -129,6 +250,9 @@ var tvheadend = {
 		});			
 	},
 
+	/*
+	 * Return a channeltag object
+	 */
 	findChannelTag : function(identifier)
 	{
 		var found=null;
@@ -143,6 +267,9 @@ var tvheadend = {
 		return found;
 	},
 
+	/*
+	 * Return all channels for a given channel tag
+	 */
 	findChannelsByChannelTag : function(channelTag) 
 	{
 		var result = [];
@@ -154,10 +281,12 @@ var tvheadend = {
 		});
 		
 		result.entries = result;
-		
 		return result;
 	},
 	
+	/*
+	 * Return the EPG info for a channel
+	 */
 	findEpgByChannel : function(channelid)
 	{
 		var result = [];
@@ -171,6 +300,9 @@ var tvheadend = {
 		return result;
 	},
 	
+	/*
+	 * Return the current EPG entry for a channel
+	 */
 	findEpgCurrentByChannel : function(channelid)
 	{
 		var epg = this.findEpgByChannel(channelid);
@@ -189,6 +321,9 @@ var tvheadend = {
 		return result;
 	},
 
+	/*
+	 * Return the next EPG info for a channel
+	 */
 	findEpgNextByChannel : function(channelid)
 	{
 		var current = this.findEpgCurrentByChannel(channelid);
@@ -222,47 +357,64 @@ var tvheadend = {
 		return result;
 	},
 
+	/*
+	 * Return the stream url for a channel
+	 */
 	getChannelStreamUrl : function(chid)
 	{	
-		return this.serverurl+'/stream/channelid/'+chid;
+		if (this.linkType == 'stream') {
+			return this.serverUrl+'/stream/channelid/'+chid;
+		}
+		
+		return this.serverUrl+'/playlist/channelid/'+chid;
 	}
 };
 
-/****
- * Página "loading"
+/*************************************************************
+ * Page "loading"
+ *************************************************************
  */
 $( '#page_loading' ).live( 'pageinit',function(event){
-	$( document ).live( 'dataloaded',function(event){
-		$.mobile.changePage("#page_home");
+
+	$( '#page_loading' ).live( 'pagebeforeshow',function(event){		
+		// Show home page when ready
+		$( document ).one( 'dataloaded',function(event){
+			$.mobile.changePage("#page_home");
+		});
 	});
+	
 });
 
-/****
- * Página "error"
+/*************************************************************
+ * Page "error"
+ *************************************************************
  */
 $( '#page_error' ).live( 'pageinit',function(event){
-	/*
-	 * Preparar el refresco de datos
-	 */
+	
+	// Data refresh on click
 	$("#page_error #btn_retry").on('click', function() {
 		tvheadend.refresh();
 	});
+	
 });
 
-/****
- * Página "channeltags"
+/*************************************************************
+ * Page "channeltags"
+ *************************************************************
  */
 $( '#page_channeltags' ).live( 'pageinit',function(event){
 		
-	$( '#page_channeltags' ).live( 'pagebeforeshow',function(event){		
+	// Fill page
+	$( '#page_channeltags' ).one( 'pagebeforeshow',function(event){		
 		
+		// Load data if needed
 		if (!tvheadend.data.isLoaded) {
 			$.mobile.changePage("#page_loading");
 			return;
 		}
 		
+		// Fill the list
 		$(".list_channeltags").empty();
-		
 		$.each(tvheadend.data.channelTags.entries, function(i, tag) {		
 			item = 	'<li>'+
 					'<a href="#page_channels?channeltag='+tag.identifier+'">'+
@@ -278,21 +430,18 @@ $( '#page_channeltags' ).live( 'pageinit',function(event){
 	
 });
 
-/****
- * Página "channels"
+/*************************************************************
+ * Page "channels"
+ *************************************************************
  */
 $( '#page_channels' ).live( 'pageinit',function(event){
 
-	/*
-	 * Relleno de la ventana 
-	 */
-	$("#page_channels").live("pagebeforeshow", function(e, data){
+	// Fill page
+	$("#page_channels").one("pagebeforeshow", function(e, data){
 		fillPage();
 	});
 	
-	/*
-	 * Ordenación
-	 */
+	// Sort by number / by name
 	$("#page_channels #btn_sort_number").on('click', function() {
 		fillPage('number');
 	});
@@ -300,9 +449,7 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 		fillPage('name');
 	});
 	
-	/*
-	 * Preparar el refresco de datos
-	 */
+	// Data refresh 
 	$("#page_channels #btn_refresh").on('click', function() {
 		$( document ).one( 'dataloaded',function(event){
 			fillPage();
@@ -311,11 +458,10 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 		tvheadend.refresh();
 	});
 
-	/*
-	 * Rellenar la ventana
-	 */
+	// Fill page
 	function fillPage(sort)
 	{
+		// Load data if needed
 		if (!tvheadend.data.isLoaded) {
 			$.mobile.changePage("#page_loading");
 			return;
@@ -323,8 +469,9 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 		
 		pageLoading.show();
 		
-	    if ($.mobile.pageData && $.mobile.pageData.channeltag){
-
+		// Look for parameters
+	    if ($.mobile.pageData && $.mobile.pageData.channeltag) {
+	    	// Show channels for that channeltag 
 	    	channelTag = tvheadend.findChannelTag($.mobile.pageData.channeltag);
 	    	$("#page_channels h1").hide();
 	    	$("h1.lbl_channelsByTag").show();
@@ -333,19 +480,19 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 	    	channels = tvheadend.findChannelsByChannelTag($.mobile.pageData.channeltag);
 	    	setTimeout(fillChannelsList, 0, channels, sort);	    	
 	    } else {
+	    	// Show all channels
 	    	setTimeout(fillChannelsList, 0, tvheadend.data.channels, sort);
 	    	$("#page_channels h1").hide();
 	    	$("h1.lbl_channels").show();
 	    };		
 	};
 
-	/*
-	 * Rellenar la lista de canales
-	 */
+	// Fill channes list
 	function fillChannelsList(channels, sort)
 	{
 		pageLoading.show();
 		
+		// Look an apply sort type
 		sort = (sort == null) ? 'number' : sort;
 		
 		$("#page_channels #btn_sort_number").removeClass('ui-btn-active');
@@ -359,15 +506,16 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 			$("#page_channels #btn_sort_name").addClass('ui-btn-active');
 		}
 		
-		// Variable en la que acumularemos todos los items a añadir a la lista
+		// Let's accumulate here the items to add to the list
 		var listItems = [];
 		
-		// Definimos un objeto función que añade a la variable un aray de items 
+		// This function object will add an array of items to the list variable
 		channelsListFillAll = function(channels) {
 			$.each(channels.entries, function(i, channel) {		
 				
 				var epg = '';
 				
+				// Retrieve the current EPG entry for the channel 
 				var epgEntry = tvheadend.findEpgCurrentByChannel(channel.chid);
 				if (epgEntry) {
 					epg+= '<h4>'+epgEntry.title+'</h4>';
@@ -382,6 +530,7 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 							'</h5>';
 				};
 				
+				// Retrieve the next EPG entry
 				var epgEntry = tvheadend.findEpgNextByChannel(channel.chid);
 				if (epgEntry) {
 					epg+= '<h4>'+epgEntry.title+'</h4>';
@@ -397,28 +546,30 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 				
 				channel.number = channel.number ? channel.number : '';
 				
+				// Channel info
 				item = 	'<a href="'+tvheadend.getChannelStreamUrl(channel.chid)+'">'+
 						'<h3 class="channel-name"><span class="channel-number">'+channel.number+'</span>'+'&nbsp;'+channel.name+'</h3>'+
 						epg +
 						'</a>';
 				
+				// Finished
 				listItems.push('<li>'+item+'</li>');
 			});
 		};
 		
-		// Definimos un objeto función que finaliza la lista 
+		// This function object will wrapup the list filling
 		channelsWrapUp = function () {
 			$('#page_channels .list_channels').html(listItems.join(''));
 			$('#page_channels .list_channels').listview('refresh');
 			pageLoading.hide();
 		};
 		
-		// Usaremos una cola de tareas para que la GUI no se congele 
+		// We use a task queue to avoid GUI freezing 
 		tasks = [];
 
-		size = 1; // Tamaño del subarray de items, ajustable
+		size = 1; // Items subarray size, adjustable for performance tweaking
 		
-		// Crear una tarea por cada subarray
+		// Create a task for each subarray
 		$.each(channels.entries, function(i, channelEntry) {
 			if ((i % size) == 0) {
 				slice = channels.entries.slice(i, i+size);
@@ -427,30 +578,27 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 			}
 		});
 		
-		// Crear una tarea para finalizar la lista
+		// Create a task to finish the list
 		tasks.push(channelsWrapUp);
 
-		// Ejecuar todas las tareas en orden
+		// Run all tasks in order
 		utils.runTasks(tasks);
 	}    	
 
 });
 
-/****
- * Página "epg"
+/*************************************************************
+ * Page "epg"
+ *************************************************************
  */
 $( '#page_epg' ).live( 'pageinit',function(event){
 
-	/*
-	 * Relleno inicial de la ventana 
-	 */
-	$("#page_epg").live("pagebeforeshow", function(e, data){
+	// Fill page
+	$("#page_epg").one("pagebeforeshow", function(e, data){
 		fillPage();
 	});
 	
-	/*
-	 * Ordenación y relleno
-	 */
+	// Sort by date / by channel
 	$("#page_epg #btn_sort_date").on('click', function() {
 		fillPage('date');
 	});
@@ -458,9 +606,7 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 		fillPage('channel');
 	});
 	
-	/*
-	 * Preparar el refresco de datos
-	 */
+	// Data refresh
 	$("#page_epg #btn_refresh").on('click', function() {
 		$( document ).one( 'dataloaded',function(event){
 			fillPage();
@@ -469,9 +615,7 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 		tvheadend.refresh();
 	});
 	
-	/*
-	 * Realiza el relleno de la ventana
-	 */
+	// Fill page
 	function fillPage(sort)
 	{
 		if (!tvheadend.data.isLoaded) {
@@ -483,9 +627,7 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 		setTimeout(fillEpgList, 0, tvheadend.data.epg, sort);
 	};
 
-	/*
-	 * Rellenar la lista de epg
-	 */
+	// Fill epg list
 	function fillEpgList(epglist, sort)
 	{
 		pageLoading.show();
@@ -503,13 +645,13 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 			$("#page_epg #btn_sort_channel").addClass('ui-btn-active');
 		};
 		
-		// Variable en la que acumularemos todos los items a añadir a la lista
+		// Let's accumulate here the items to add to the list
 		var listItems = [];
 		
-		// Canal actual (para ordenación por canal)
+		// Current channel (for sorting by channel)
 		var currChannel = ''; 
 		
-		// Definimos un objeto función que añade a la variable un aray de items 
+		// This function object will add an array of items to the list variable
 		epgListFillAll = function(epglist) {
 			
 			$.each(epglist.entries, function(i, epgEntry) {
@@ -564,19 +706,19 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 
 		}; 	
 
-		// Definimos un objeto función que finaliza la lista 
+		// This function object will wrapup the list filling
 		epgWrapUp = function () {
 			$("#page_epg .list_epg").html(listItems.join(''));
 			$('#page_epg .list_epg').listview('refresh');
 			pageLoading.hide();
 		};
 		
-		// Usaremos una cola de tareas para que la GUI no se congele 
+		// We use a task queue to avoid GUI freezing 
 		tasks = [];
 
-		size = 1; // Tamaño del subarray de items, ajustable
+		size = 1; // Items subarray size, adjustable for performance tweaking
 		
-		// Crear una tarea por cada subarray
+		// Create a task for each subarray
 		$.each(epglist.entries, function(i, epgEntry) {
 			if ((i % size) == 0) {
 				slice = epglist.entries.slice(i, i+size);
@@ -585,34 +727,140 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 			}
 		});
 		
-		// Crear una tarea para finalizar la lista
+		// Create a task to finish the list
 		tasks.push(epgWrapUp);
 
-		// Ejecuar todas las tareas en orden
+		// Run all tasks in order
 		utils.runTasks(tasks);
 	};
 });
 
+
+/*************************************************************
+ * Page "config"
+ *************************************************************
+ */
+$( '#page_config' ).live( 'pageinit',function(event){
+
+	// Fill page
+	$("#page_config").one("pagebeforeshow", function(e, data){
+		setValues();
+	});
+	
+	// Defaults
+	$("#page_config #btn_default").on('click', function() {
+		setDefaults();
+	});
+	
+	function setDefaults() 
+	{
+		$("#page_config #fld_serverip").val(tvheadend.defaultServerIP);
+		$("#page_config #fld_serverport").val(tvheadend.defaultServerPort);
+		$("#page_config #fld_linktype").val(tvheadend.defaultLinkType);
+	};
+
+	function setValues() 
+	{
+		$("#page_config #fld_serverip").val(tvheadend.serverIP);
+		$("#page_config #fld_serverport").val(tvheadend.serverPort);
+		$("#page_config #fld_linktype").val(tvheadend.linkType);
+	};
+	
+	$('#form_config').submit(function() {  
+		  var err = false;  
+		  
+		  // Reset errors
+		  $("#form_config label").removeClass('error');	 
+		  $("#form_config #message").text('').hide();
+
+		  // Validation: all fields required  
+		  $("#form_config input").reverse().each(function(index, field){  
+		    if($(field).val() == null || $(field).val() =='') {  
+		      $(field).prev().addClass('error');
+		      $(field).focus();
+		      err = true;  
+		    }  
+		  });  
+		  
+		  if (err) {
+			  $("#form_config #message").
+			  	text("ERROR: Fill all required fields").
+			  	attr("rel", "localize[error.fill-all]").
+			  	localize("lang", locOptions).
+			  	fadeIn('fast');
+			  return false;
+		  }
+
+		  // Get current values
+		  ipOrHostname = $("#page_config #fld_serverip").val();
+		  port = $("#page_config #fld_serverport").val();
+		  linktype = $("#page_config #fld_linktype").val();
+
+		  // Validate server name/IP and port
+		  ipParts = ipOrHostname.split('.');
+		  if (ipParts.length == 4) {
+			  // If it looks like an IP it must validate
+			  $.each(ipParts, function(i, part){
+				  if (!utils.isNumber(part) || part > 255 ) {
+					  err = true;
+					  return false;
+				  }
+			  })
+			  if (err) {
+				  $("#fld_serverip").prev().addClass('error');
+				  $("#fld_serverip").focus();
+				  $("#form_config #message").
+				  	text('ERROR: Not a valid IP').
+				  	attr("rel", "localize[error.invalid-ip]").
+				  	localize("lang", locOptions).
+				  	fadeIn('fast');
+				  return false;
+			  }
+		  }
+		  
+		  if (!utils.isNumber(port) || port < 1024 || port > 65535 ) {
+			  $("#fld_serverport").prev().addClass('error');
+			  $("#fld_serverport").focus();
+			  $("#form_config #message").
+			  	text('ERROR: Not a valid port').
+			  	attr("rel", "localize[error.invalid-port]").
+			  	localize("lang", locOptions).
+			  	fadeIn('fast');
+			  return false;			  
+		  }
+		  
+		  // Save values
+		  $.DSt.set('serverip', ipOrHostname);
+		  $.DSt.set('serverport', port);
+		  $.DSt.set('linktype', linktype);
+			  
+		  // Reload data
+		  tvheadend.init(true);
+		  $.mobile.changePage("#page_loading");
+		  
+		  // Must return false to avoid real submission
+		  return false;
+	});
+});
+
+/*
+ * Object to handle page loading indications
+ */
 var pageLoading = {
 		
 	show: function()
 		{
 			$("body").append('<div class="pageLoading"/>');
-			//setTimeout('$.mobile.showPageLoadingMsg', 5);
-			$.mobile.showPageLoadingMsg();
+			setTimeout('$.mobile.showPageLoadingMsg()', 1);
 			setTimeout('pageLoading.hide()', 15000);
 		},
 
 	hide: function()
 		{
 			$(".pageLoading").remove();
-			//setTimeout('$.mobile.hidePageLoadingMsg', 5);
-			$.mobile.hidePageLoadingMsg();
-			//$('body').removeClass('ui-loading');
+			setTimeout('$.mobile.hidePageLoadingMsg()', 1);
 		},
 };
  
-
-
 
 
