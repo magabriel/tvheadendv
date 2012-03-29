@@ -9,7 +9,7 @@ Released under the GNU GPL V3.
 
 This is a mobile web viewer for the excelent HTS Tvheadend {https://www.lonelycoder.com/tvheadend/} streaming server.
 
-Tvheadend does not provide an adequate mobile version and there are no plans to implement one. There are both an official iPhone iPhone client and at least another unofficial one {http://john-tornblom.github.com/TVHGuide}. 
+Tvheadend does not provide an adequate mobile version and there are no plans to implement one. There are both an official iPhone client and at least another unofficial one for Android {http://john-tornblom.github.com/TVHGuide}. 
 
 I started this project as an excuse to teach myself jQuery Mobile. I would be happy if anyone finds it useful.
 
@@ -23,6 +23,7 @@ I started this project as an excuse to teach myself jQuery Mobile. I would be ha
 
 - Linux platform (sorry, not tested in Windows) with Apache and PHP. For simplicity you should use the same machine where Tvheadend lives, but is up to you to use another one. The application can work from any computer in the same network. 
 - A mobile platform with a modern browser (tested under Androd 2.3 and Dolphin browser).
+- An external media player that can play streaming urls. 
 
 
 ## Installation
