@@ -3,13 +3,13 @@
 Copyright (c) 2012 Miguel Angel Gabriel (magabriel@gmail.com). All rights reserved.
 
 Released under the GNU GPL V3. 
----
+
 
 ## Synopsis
 
-This is a mobile viewer for the excelent [HTS Tvheadend]{https://www.lonelycoder.com/tvheadend/} streaming server.
+This is a mobile web viewer for the excelent HTS Tvheadend {https://www.lonelycoder.com/tvheadend/} streaming server.
 
-Tvheadend does not provide an adequate mobile version and there is no plans to implement one. There is an official iPhone client that does pretty much this but Android users are left behind. Hence the need for a mobile viewer that is web-based.
+Tvheadend does not provide an adequate mobile version and there are no plans to implement one. There are both an official iPhone iPhone client and at least another unofficial one {http://john-tornblom.github.com/TVHGuide}. 
 
 I started this project as an excuse to teach myself jQuery Mobile. I would be happy if anyone finds it useful.
 
@@ -17,7 +17,7 @@ I started this project as an excuse to teach myself jQuery Mobile. I would be ha
 
 - Easy installation (or not too difficult, anyway).
 - Show channel tags, channels and EPG.
-- When in the channel or EPG list, tapping on an item will open the default video player to play the live stream directly from your server (I personally recommend the excelent MX Videoplayer in the Android platform). 
+- When in the channel or EPG list, tapping on an item will open the default video player to play the live stream directly from your server (I personally recommend the excellent MX Videoplayer in the Android platform). 
 
 ## Requirements
 
