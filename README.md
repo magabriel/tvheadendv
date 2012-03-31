@@ -66,6 +66,8 @@ The solution is to use a proxy (a PHP script) that executes on the same or anoth
     
 ## TO DO
 
+- Show EPG descriptions.
+- Proper installation procedure / package.
 - Generate an Android and iPhone native application using PhoneGap.
     
     
