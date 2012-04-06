@@ -20,6 +20,8 @@
     "link-type": "Tipo de enlace",
     "defaults": "Por defecto",
     "save": "Guardar",
+    "epg-event": "Evento", 
+    "watch-channel": "Ver canal",
     "error": {
        "fill-all": "ERROR: Rellene todos los campos",
        "invalid-ip": "ERROR: No es una IP válida",

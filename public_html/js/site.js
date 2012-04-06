@@ -14,10 +14,8 @@
  * Setup when jQuery ready
  */
 $(document).ready(function() {
-	// Setup localization
-	locOptions = { pathPrefix : "js", skipLanguage: /^en/ };
-	locOptions.language = "es";
-	$("[rel*=localize]").localize("lang", locOptions);	
+	// Translate everything
+	$("body").translate();
 });
 
 /*
@@ -37,6 +35,10 @@ $(document).bind("mobileinit", function(){
 	tvheadend.init();	
 });
 
+/*************************************************************
+ * Capture some events
+ *************************************************************
+ */
 /*
  * Retrieve the parameters sent to any window (see jqm.page.params.js)
  */
@@ -59,10 +61,10 @@ $(document).on( 'timeout',function(event){
 });
 
 /*
- * Track some events (for debugging)
+ * Track some other events (for debugging)
  */
-$( document ).on( 'dataloaded',function(event){ console.debug('document.dataloaded');});
-$( document ).on( 'initdone',function(event){ console.debug('document.initdone');});
+$(document).on( 'dataloaded',function(event){ console.debug('document.dataloaded');});
+$(document).on( 'initdone',function(event){ console.debug('document.initdone');});
 
 /*************************************************************
  * Tvheadend handler object
@@ -303,12 +305,33 @@ var tvheadend = {
 	{
 		var found=null;
 		
-		$.each(this.data.channels.entries, function(i, channel) {
-			if (channel.chid == identifier) {
-				found=channel;
-				return false;
-			}
-		});
+		if (this.data.channels) {
+			$.each(this.data.channels.entries, function(i, channel) {
+				if (channel.chid == identifier) {
+					found=channel;
+					return false;
+				}
+			});
+		}
+		
+		return found;
+	},
+
+	/*
+	 * Return the EPG info
+	 */
+	findEpg : function(id)
+	{
+		var found=null;
+		
+		if (this.data.epg) {
+			$.each(this.data.epg.entries, function(i, entry) {		
+				if(entry.id == id) {
+					found=entry;
+					return false;
+				}
+			});
+		}
 		
 		return found;
 	},
@@ -353,16 +376,14 @@ var tvheadend = {
 	/*
 	 * Return the next EPG info for a channel
 	 */
-	findEpgNextByChannel : function(channelid)
+	findEpgNextByChannel : function(channelid, currentEpgEntry)
 	{
-		var current = this.findEpgCurrentByChannel(channelid);
-
 		var currStart = new Date();
 		var currEnd = new Date();
 
-		if (current) {
-			currStart = new Date(current.start * 1000);
-			currEnd = new Date(current.end * 1000);
+		if (currentEpgEntry) {
+			currStart = new Date(currentEpgEntry.start * 1000);
+			currEnd = new Date(currentEpgEntry.end * 1000);
 		}
 		
 		var result = null;
@@ -374,11 +395,11 @@ var tvheadend = {
 		
 		$.each(epg.entries, function(i, entry) {		
 			var start = new Date(entry.start * 1000);
-			var end = new Date(entry.end * 1000);
 			if (start.getTime() > currDate.getTime() && start.getTime() >= currEnd.getTime()) {
 				if (start.getTime() < resultStart) {
 					result = entry;
 					resultStart = start.getTime(); 
+					return false;
 				}
 			}
 		});
@@ -411,10 +432,8 @@ $( '#page_loading' ).live( 'pageinit',function(event){
 			// Data has been already loaded, switch to home right now!!
 			$.mobile.changePage("#page_home");
 		} else {
-			console.debug('cero');
 			// Wait for data loaded and then switch to home 
 			$( document ).one( 'dataloaded',function(event){
-				console.debug('uno');
 				$.mobile.changePage("#page_home");
 			});
 		}
@@ -446,9 +465,10 @@ $( '#page_channeltags' ).live( 'pageinit',function(event){
 	// Fill page
 	$( '#page_channeltags' ).on( 'pagebeforeshow',function(event){		
 		console.debug('page_channeltags.pagebeforeshow');
-		
+			
 		// Load data if needed
 		if (!tvheadend.data.isLoaded) {
+			tvheadend.refresh();
 			$.mobile.changePage("#page_loading");
 			return;
 		}
@@ -480,6 +500,14 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 	// Fill page
 	$("#page_channels").on("pagebeforeshow", function(e, data){
 		console.debug('page_channels.pagebeforeshow');
+		
+		// Load data if needed
+		if (!tvheadend.data.isLoaded) {
+			tvheadend.refresh();
+			$.mobile.changePage("#page_loading");
+			return;
+		}
+		
 		fillPage();
 	});
 	
@@ -502,13 +530,7 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 
 	// Fill page
 	function fillPage(sort)
-	{
-		// Load data if needed
-		if (!tvheadend.data.isLoaded) {
-			$.mobile.changePage("#page_loading");
-			return;
-		}
-		
+	{		
 		pageLoading.show();
 		
 		// Look for parameters
@@ -529,7 +551,7 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 	    };		
 	};
 
-	// Fill channes list
+	// Fill channels list
 	function fillChannelsList(channels, sort)
 	{
 		pageLoading.show();
@@ -558,44 +580,44 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 				var epg = '';
 				
 				// Retrieve the current EPG entry for the channel 
-				var epgEntry = tvheadend.findEpgCurrentByChannel(channel.chid);
-				if (epgEntry) {
-					epg+= '<h4>'+epgEntry.title+'</h4>';
-					epg+= '<h5>'+
-							'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
-							'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
-							'<span class="epg-bar">'+
-							'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
-							'</span></span>' +
-							'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
-							'<span class="epg-remain">['+utils.getDisplayRemaining(epgEntry.start, epgEntry.end)+']</span>'+
-							'</h5>';
+				var epgEntryCurrent = tvheadend.findEpgCurrentByChannel(channel.chid);
+				if (epgEntryCurrent) {
+					epg+= epgFormat.current(epgEntryCurrent); 
 				};
 				
 				// Retrieve the next EPG entry
-				var epgEntry = tvheadend.findEpgNextByChannel(channel.chid);
-				if (epgEntry) {
-					epg+= '<h4>'+epgEntry.title+'</h4>';
-					epg+= '<h5>'+
-							'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
-							'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
-							'<span class="epg-bar">'+
-							'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
-							'</span></span>' +
-							'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
-							'</h5>';
+				var epgEntryNext = tvheadend.findEpgNextByChannel(channel.chid, epgEntryCurrent);
+				if (epgEntryNext) {
+					epg+= epgFormat.next(epgEntryNext); 
 				};
 				
-				channel.number = channel.number ? channel.number : '';
+				// Create the EPG info link
+				var epgPar = [];
+				epgPar.push('chid='+channel.chid);
 				
-				// Channel info
-				item = 	'<a href="'+tvheadend.getChannelStreamUrl(channel.chid)+'">'+
+				if (epgEntryCurrent) {
+					epgPar.push('current='+epgEntryCurrent.id);
+				}
+				
+				if (epgEntryNext) {
+					epgPar.push('next='+epgEntryNext.id);
+				}
+				var epgInfoLink = '#page_epgevent?'+epgPar.join('&');
+				
+				// Create the stream url link
+				var streamLink = tvheadend.getChannelStreamUrl(channel.chid);
+
+				// Crate the list item
+				channel.number = channel.number ? channel.number : '';
+				item = 	'<a href="'+epgInfoLink+'">'+
 						'<h3 class="channel-name-block">'+
 						'<span class="channel-number">'+channel.number+'</span>'+
 						'<span class="channel-icon"><img src="'+channel.ch_icon+'"></span>'+
 						'<span class="channel-name">'+channel.name+'</span></h3>'+
 						epg +
 						'</a>';
+
+				item+= '<a href="'+streamLink+'" />';
 				
 				// Finished
 				listItems.push('<li>'+item+'</li>');
@@ -604,8 +626,10 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 		
 		// This function object will wrapup the list filling
 		channelsWrapUp = function () {
-			$('#page_channels .list_channels').html(listItems.join(''));
-			$('#page_channels .list_channels').listview('refresh');
+			$('#page_channels .list_channels').
+				html(listItems.join('')).
+				listview('refresh');
+				
 			pageLoading.hide();
 		};
 		
@@ -643,6 +667,13 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 	$("#page_epg").on("pagebeforeshow", function(e, data){
 		console.debug('page_epg.pagebeforeshow');
 		
+		// Load data if needed
+		if (!tvheadend.data.isLoaded) {
+			tvheadend.refresh();
+			$.mobile.changePage("#page_loading");
+			return;
+		}
+		
 		fillPage();
 	});
 	
@@ -665,12 +696,7 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 	
 	// Fill page
 	function fillPage(sort)
-	{
-		if (!tvheadend.data.isLoaded) {
-			$.mobile.changePage("#page_loading");
-			return;
-		}
-		
+	{	
 		pageLoading.show();
 		setTimeout(fillEpgList, 0, tvheadend.data.epg, sort);
 	};
@@ -716,38 +742,31 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 					}
 				}
 					
+				// Create the EPG info link
+				var epgPar = [];
+				epgPar.push('chid='+channel.chid);
+				
 				var epgEntryCurrent = tvheadend.findEpgCurrentByChannel(epgEntry.channelid);
 				if (epgEntryCurrent && epgEntryCurrent.id == epgEntry.id) {
-					epg+= '<h4>'+epgEntry.title+'</h4>';
-					epg+= '<h5>'+
-					'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
-					'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
-					'<span class="epg-bar">'+
-					'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
-					'</span></span>' +
-					'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
-					'<span class="epg-remain">['+utils.getDisplayRemaining(epgEntry.start, epgEntry.end)+']</span>'+
-					'</h5>';
+					epg+= epgFormat.current(epgEntry);
+					epgPar.push('current='+epgEntry.id);
 				} else {
-					epg+= '<h4>'+epgEntry.title+'</h4>';
-					epg+= '<h5>'+
-					'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
-					'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
-					'<span class="epg-bar">'+
-					'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
-					'</span></span>' +
-					'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>'+
-					'</h5>';
+					epg+= epgFormat.next(epgEntry);
+					epgPar.push('next='+epgEntry.id);
 				};
+				var epgInfoLink = '#page_epgevent?'+epgPar.join('&');
+				
+				// Create the stream url link
+				var streamLink = tvheadend.getChannelStreamUrl(channel.chid);
 
 				if (sort == 'channel') {
 					item = 
-						'<a href="'+tvheadend.getChannelStreamUrl(epgEntry.channelid)+'">'+
+						'<a href="'+epgInfoLink+'">'+
 						epg +
 						'</a>';
 				} else { // 'time'
 					item = 
-						'<a href="'+tvheadend.getChannelStreamUrl(epgEntry.channelid)+'">'+
+						'<a href="'+epgInfoLink+'">'+
 						'<h3 class="channel-name-block">'+
 						'<span class="channel-icon">'+
 							'<img src="'+channel.ch_icon+'" onerror="this.style.display = \'none\'"></span>'+
@@ -755,6 +774,8 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 						epg +
 						'</a>';
 				}
+				
+				item+= '<a href="'+streamLink+'" data-split-icon="info" />';
 
 				listItems.push('<li>'+item+'</li>');
 			});
@@ -763,8 +784,9 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 
 		// This function object will wrapup the list filling
 		epgWrapUp = function () {
-			$("#page_epg .list_epg").html(listItems.join(''));
-			$('#page_epg .list_epg').listview('refresh');
+			$("#page_epg .list_epg").
+				html(listItems.join('')).
+				listview('refresh');
 			pageLoading.hide();
 		};
 		
@@ -790,6 +812,71 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 	};
 });
 
+/*************************************************************
+ * Page "epgevent"
+ *************************************************************
+ */
+$( '#page_epgevent' ).live( 'pageinit',function(event){
+	console.debug('page_epgevent.pageinit');
+	
+	// Fill page
+	$("#page_epgevent").on("pagebeforeshow", function(e, data){
+		console.debug('page_epgevent.pagebeforeshow');
+			
+		// Load data if needed
+		if (!tvheadend.data.isLoaded) {
+			tvheadend.refresh();
+			$.mobile.changePage("#page_loading");
+			return;
+		}
+		
+		// Look for parameters
+		var chid, current, next;
+	    if ($.mobile.pageData && $.mobile.pageData.chid) {
+	    	chid = $.mobile.pageData.chid;
+	    }		
+	    if ($.mobile.pageData && $.mobile.pageData.current) {
+	    	current = tvheadend.findEpg($.mobile.pageData.current);
+	    }
+	    if ($.mobile.pageData && $.mobile.pageData.next) {
+	    	next = tvheadend.findEpg($.mobile.pageData.next);
+	    }
+
+	    var text = '';
+	    
+	    channel = tvheadend.findChannelById(chid);
+	    
+	    if (channel) {
+			text+= '<h3 class="channel-name-block">'+
+					'<span class="channel-icon">'+
+						'<img src="'+channel.ch_icon+'" onerror="this.style.display = \'none\'"></span>'+
+					'<span class="channel-name">'+channel.name+'</span></h3>';
+	    }
+	    
+	    if (current) {
+	    	text+= epgFormat.current(current, true);
+	    }
+	    
+	    if (next) {
+	    	text+= current ? '<hr/>' : '';
+	    	text+= epgFormat.next(next, true);
+	    }
+	    
+	    if (channel) {
+		    var streamLink = tvheadend.getChannelStreamUrl(channel.chid);
+		    
+		    text+= '<div style="clear:both"/>';
+		    text+= '<a href="'+streamLink+'" data-role="button" '+
+		    		'data-theme="b" data-inline="true" rel="localize[watch-channel]">Watch channel</a>';
+	    }
+	    
+	    $("#page_epgevent #content").
+	    	html(text).
+	    	translate().
+	    	end().
+	    	trigger('create');
+	});
+});	
 
 /*************************************************************
  * Page "config"
@@ -843,8 +930,7 @@ $( '#page_config' ).live( 'pageinit',function(event){
 		  if (err) {
 			  $("#form_config #message").
 			  	text("ERROR: Fill all required fields").
-			  	attr("rel", "localize[error.fill-all]").
-			  	localize("lang", locOptions).
+			  	attr("rel", "localize[error.fill-all]").translate().
 			  	fadeIn('fast');
 			  return false;
 		  }
@@ -869,8 +955,7 @@ $( '#page_config' ).live( 'pageinit',function(event){
 				  $("#fld_serverip").focus();
 				  $("#form_config #message").
 				  	text('ERROR: Not a valid IP').
-				  	attr("rel", "localize[error.invalid-ip]").
-				  	localize("lang", locOptions).
+				  	attr("rel", "localize[error.invalid-ip]").translate().
 				  	fadeIn('fast');
 				  return false;
 			  }
@@ -881,8 +966,7 @@ $( '#page_config' ).live( 'pageinit',function(event){
 			  $("#fld_serverport").focus();
 			  $("#form_config #message").
 			  	text('ERROR: Not a valid port').
-			  	attr("rel", "localize[error.invalid-port]").
-			  	localize("lang", locOptions).
+			  	attr("rel", "localize[error.invalid-port]").translate().
 			  	fadeIn('fast');
 			  return false;			  
 		  }
@@ -900,6 +984,54 @@ $( '#page_config' ).live( 'pageinit',function(event){
 		  return false;
 	});
 });
+
+/*
+ * Helper to format the EPG information
+ */
+var epgFormat = {
+		
+		_item : function(epgEntry, displayRemaining) {
+			
+			var epg= '<h4 class="epg-title">'+epgEntry.title+'</h4>';
+			
+			epg+= '<h5 class="epg-entry">'+
+			'<span class="epg-duration">['+utils.getDisplayDuration(epgEntry.duration)+']</span>'+
+			'<span class="epg-start">'+utils.getDisplayTime(epgEntry.start)+'</span>'+
+			'<span class="epg-bar">'+
+			'<span class="epg-barc" style="width:'+utils.getElapsedDuration(epgEntry.start, epgEntry.end, 80)+'px;">&nbsp;'+
+			'</span></span>' +
+			'<span class="epg-end">'+utils.getDisplayTime(epgEntry.end)+'</span>';
+			
+			if (displayRemaining) {
+				epg+='<span class="epg-remain">['+utils.getDisplayRemaining(epgEntry.start, epgEntry.end)+']</span>';
+			}
+			epg+='</h5>';
+			
+			return epg;
+		},
+
+		current : function(epgEntry, showDescription) {
+			
+			var epg = this._item(epgEntry, true);
+			
+			if (showDescription) {
+				epg+= '<p class="epg-description">'+epgEntry.description+'</p>';
+			}
+			
+			return epg;
+		},
+		
+		next: function(epgEntry, showDescription) {
+			
+			var epg = this._item(epgEntry);
+			
+			if (showDescription) {
+				epg+= '<p class="epg-description">'+epgEntry.description+'</p>';
+			}
+			
+			return epg;
+		},
+}
 
 /*
  * Object to handle page loading indications

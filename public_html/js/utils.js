@@ -167,8 +167,26 @@ var utils = {
 
 };
 
+/*
+ * A plugin to manage localization with jquery.localize.js
+ */
+(function($) {
+	var options = { pathPrefix : "js", skipLanguage: /^en/ };
+	
+	$.fn.translate = function() {
+		$items = this.find("[rel*=localize]");
+		if ($items.length == 0) {
+			$items = this;
+		}
+		return $items.localize("lang", options);
+	};
+	
+})(jQuery);
+
+/*
+ * Several mini plugins
+ */ 
 (function($){
-	// Several mini plugins
 	$.fn.reverse = [].reverse;
 	$.fn.sort = [].sort;
 	$.fn.shift = [].shift;

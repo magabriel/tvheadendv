@@ -100,7 +100,7 @@
 				<div id="text"></div>
 			</div>
 
-			<ul data-role="listview" class="list_mainmenu" data-inset="true">
+			<ul data-role="listview" class="list_mainmenu" >
 				<li><a href="#page_channeltags"> <img
 						src="images/channeltags.png" alt="" />
 						<h3 rel="localize[channel-tags]">Channel tags</h3>
@@ -135,7 +135,7 @@
 		<!-- /header -->
 
 		<div data-role="content">
-			<ul data-role="listview" class="list_channeltags" data-inset="true">
+			<ul data-role="listview" class="list_channeltags">
 				<li><p rel="localize[no-data]">No data</p></li>
 			</ul>
 		</div>
@@ -156,7 +156,7 @@
 			<a href="#" data-role="button" data-icon="arrow-l" data-rel="back"
 				rel="localize[back]">Back</a> <a href="#" id="btn_refresh"
 				data-role="button" data-icon="refresh" class="ui-btn-right"
-				data-theme="b" , rel="localize[refresh]">Refresh</a>
+				data-theme="b" rel="localize[refresh]">Refresh</a>
 			<h1 class="lbl_channels" rel="localize[channels]">Channels</h1>
 			<h1 class="lbl_channelsByTag" style="display: none">
 				<span class="txt_channeltag" rel="localize[n-a]">N/A</span>
@@ -176,7 +176,7 @@
 		<!-- /header -->
 
 		<div data-role="content">
-			<ul data-role="listview" class="list_channels" data-inset="true">
+			<ul data-role="listview" class="list_channels">
 				<li><p rel="localize[no-data]">No data</p></li>
 			</ul>
 		</div>
@@ -214,7 +214,7 @@
 		<!-- /header -->
 
 		<div data-role="content">
-			<ul data-role="listview" class="list_epg" data-inset="true">
+			<ul data-role="listview" class="list_epg">
 				<li><p rel="localize[no-data]">No data</p></li>
 			</ul>
 		</div>
@@ -227,6 +227,29 @@
 
 	</div>
 	<!-- /page #epg -->
+
+    <!-- Start page: #epgevent -->
+    <div data-role="page" id="page_epgevent">
+
+        <div data-role="header" data-position="fixed">
+            <a href="#" data-role="button" data-icon="arrow-l" data-rel="back"
+                rel="localize[back]">Back</a> 
+            <h1 rel="localize[epg-event]">EPG event</h1>
+        </div>
+        <!-- /header -->
+
+        <div data-role="content" id="content">
+            <p rel="localize[no-data]">No data</p>
+        </div>
+        <!-- /content -->
+
+        <div data-role="footer" data-theme="a" data-position="fixed">
+            <h4>&copy; MAGS</h4>
+        </div>
+        <!-- /footer -->
+
+    </div>
+    <!-- /page #epgevent -->
 
 	<!-- Start page: #config -->
 	<div data-role="page" id="page_config">

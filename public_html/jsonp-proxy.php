@@ -150,10 +150,11 @@ class JsonpProxy
 	protected function getResponseHeaders($headers)
 	{
 		$arh = array();
-		$headers = $headers;
-		foreach ($headers as $header) {
-			$header = explode(":", $header);
-			$arh[array_shift($header)] = trim(implode(":", $header));
+		if (is_array($headers)) {
+			foreach ($headers as $header) {
+				$header = explode(":", $header);
+				$arh[array_shift($header)] = trim(implode(":", $header));
+			}
 		}
 		return $arh;
 	}
