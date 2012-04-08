@@ -24,7 +24,7 @@ $(document).ready(function() {
 $(document).bind("mobileinit", function(){
 	console.debug('document.mobileinit');
 	
-	$.mobile.defaultPageTransition = 'none';
+	$.mobile.defaultPageTransition = 'slide';
 	$.mobile.defaultDialogTransition = 'none';
 	
 	// Use proxy if we are not a native app ("same-domain" restriction)
