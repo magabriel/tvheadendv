@@ -171,14 +171,88 @@ var utils = {
  * A plugin to manage localization with jquery.localize.js
  */
 (function($) {
-	var options = { pathPrefix : "js", skipLanguage: /^en/ };
+
+	var options = { pathPrefix : "js", 		// Where the transaltion files are
+					skipLanguage: /^en/}; 	// Default language (to avoid trying to translate it)
 	
+	/*
+	 * jquery.localize doesn't work on buttons that have already been enhanced by
+	 * JQuery Mobile. We need to override the translation callback to provide an
+	 * additional case for the button's markup. 
+	 */
+	options.callback = function(data, defaultCallback) {
+			
+		return $items.each(function() {
+			var elem, key, value;
+			elem = $(this);
+			key = elem.attr("rel").match(/localize\[(.*?)\]/)[1];
+			value = valueForKey(key, data);
+			if (elem.is('input')) {
+				if (elem.is("[placeholder]")) {
+					return elem.attr("placeholder", value);
+				} else {
+					return elem.val(value);
+				}
+			} else if (elem.is('optgroup')) {
+				return elem.attr("label", value);
+			} else if (elem.is('img')) {
+				value = valueForKey("" + key + ".alt", data);
+				if (value != null) {
+					elem.attr("alt", value);
+				}
+				value = valueForKey("" + key + ".src", data);
+				if (value != null) {
+					return elem.attr("src", value);
+				}
+			} else if (elem.is('a')) {
+				/* If this is an already-enhanced button, modify just
+				 * the html part of the inner span
+				 */ 
+				button = elem.find(".ui-btn-text");
+				if (button && button.html()) {
+					value = valueForKey(key, data);
+					return button.html(value);
+				} else {
+					return elem.html(value);
+				}
+			} else {
+				return elem.html(value);
+			}
+		});
+	};
+	
+	/*
+	 * This is just a copy of the same function inside jquery.localize, because
+	 * it cannot be called directly from our callback.
+	 */
+    valueForKey = function(key, data) {
+        var keys, value, _i, _len;
+        keys = key.split(/\./);
+        value = data;
+        for (_i = 0, _len = keys.length; _i < _len; _i++) {
+          key = keys[_i];
+          value = value != null ? value[key] : null;
+        }
+        return value;
+      };
+	
+    /*
+     * The JQuery plugin call
+     */
 	$.fn.translate = function() {
 		$items = this.find("[rel*=localize]");
 		if ($items.length == 0) {
 			$items = this;
 		}
 		return $items.localize("lang", options);
+	};
+	
+	/*
+	 * Used to force a target language, in case the autodetection
+	 * cannot be reliable enough. 
+	 */
+	$.setLanguage = function(lang) {
+		options.language = lang;
 	};
 	
 })(jQuery);
