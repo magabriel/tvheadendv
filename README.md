@@ -4,7 +4,6 @@ Copyright (c) 2012 Miguel Angel Gabriel (magabriel@gmail.com). All rights reserv
 
 Released under the GNU GPL V3. 
 
-
 ## Synopsis
 
 This is a mobile web viewer for the excelent HTS Tvheadend {https://www.lonelycoder.com/tvheadend/} streaming server.
@@ -24,7 +23,6 @@ I started this project as an excuse to teach myself jQuery Mobile. I would be ha
 - Linux platform (sorry, not tested in Windows) with Apache and PHP. For simplicity you should use the same machine where Tvheadend lives, but is up to you to use another one. The application can work from any computer in the same network. 
 - A mobile platform with a modern browser (tested under Androd 2.3 and Dolphin browser).
 - An external media player that can play streaming urls. 
-
 
 ## Installation
 
@@ -55,18 +53,18 @@ I started this project as an excuse to teach myself jQuery Mobile. I would be ha
         And restart Apache.
         
   Either way, after that you will be able to access the application opening {http://yourserver/tvheadendv} from your mobile browser.
-  
-  
+ 
 ## The technical stuff
 
 The application interacts with Tvheadend via its JSON api to access channels, channel tags and EPG information. Unfortunately, for the browser to be able to receive data from a server the requester Javascript program must have been downloaded from the same server (it is called the "same origin" restriction and it means that protocol, hostname and port must be equal). There is a solution to overcome this security restriction: use JSONP instead of plain-old JSON. But now we have the problem that Tvheadend does not implement JSONP...
 
 The solution is to use a proxy (a PHP script) that executes on the same or another server, that will receive the JSONP request and forward a JSON request to Tvheadend, receive the JSON response from Tvheadend and formward it back to us in JSONP form.  Where should this proxy be installed? Anywhere in the network, but the easy solution is using the same directory than Tvheadendv. It is called jsonp-proxy.php and you will find it there if you look closely. 
     
-    
 ## TO DO
 
-- Show EPG descriptions.
+A random list of features and improvements that may or may not be implemented. 
+
+- Improve performance on mobile browsers.
 - Proper installation procedure / package.
 - Generate an Android and iPhone native application using PhoneGap.
     
