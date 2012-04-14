@@ -98,6 +98,17 @@ class JsonpProxy
 		
 		$response = $this->sendRequest($requestUrl);
 		
+		/* Add the user preferred language (set in the browser but this is the only
+		 * way to get to it. It can then be used in the client code to localize the 
+		 * user interface.
+		 * NOTE: I am not using json_ functions because they only work with UTF-8
+		 * data. This solution is ugly but it works.
+		 */
+		if (strlen($response) > 0 && substr($response, 0, 1) == '{') {
+			$response = '{ "acceptLanguage":'.'"'.$_SERVER['HTTP_ACCEPT_LANGUAGE'].'"'.
+			','.substr($response, 1);
+		}
+		
 		// Build the response
 		$return = $jsoncallback.'('.$response.')';
 		
@@ -106,6 +117,22 @@ class JsonpProxy
 		echo $return;
 	}
 	
+	function prepareJSON($input) {
+	
+		$input = mb_convert_encoding($input, 'UTF-8', 'UTF-8');
+	
+		return $input;
+	}
+	
+	function my_json_encode($arr)
+	{
+		//convmap since 0x80 char codes so it takes all multibyte codes (above ASCII 127). So such characters are being "hidden" from normal json_encoding
+		array_walk_recursive($arr, function (&$item, $key) {
+			if (is_string($item)) $item = mb_encode_numericentity($item, array (0x80, 0xffff, 0, 0xffff), 'UTF-8');
+		});
+		return mb_decode_numericentity(json_encode($arr), array (0x80, 0xffff, 0, 0xffff), 'UTF-8');
+	
+	}
 	protected function sendRequest($url)
 	{
 		// Request
