@@ -36,9 +36,6 @@ $(document).ready(function() {
 $(document).bind("mobileinit", function(){
 	console.debug('document.mobileinit');
 	
-	// "slide" (default) causes an awkward flicker 
-	$.mobile.defaultDialogTransition = 'none';
-	
 	// Use proxy if we are not a native app ("same-domain" restriction)
 	// TODO: This property must be set to false when this becomes a PhoneGap app.
 	tvheadend.useProxy = true;
@@ -672,7 +669,8 @@ $( '#page_channels' ).live( 'pageinit',function(event){
 		// This function object will wrapup the list filling
 		channelsWrapUp = function () {
 			$('#page_channels .list_channels').
-				html(listItems.join('')).
+				empty().
+				append(listItems.join('')).
 				listview('refresh');
 				
 			pageLoading.hide();
@@ -830,8 +828,10 @@ $( '#page_epg' ).live( 'pageinit',function(event){
 
 		// This function object will wrapup the list filling
 		epgWrapUp = function () {
-			//$("#page_epg .list_epg").html(listItems.join('')).listview('refresh');
-			$("#page_epg .list_epg").empty().append(listItems.join('')).listview('refresh');
+			$("#page_epg .list_epg").
+				empty().
+				append(listItems.join('')).
+				listview('refresh');
 			pageLoading.hide();
 		};
 		
