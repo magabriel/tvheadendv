@@ -12,6 +12,8 @@ Tvheadend does not provide an adequate mobile version and there are no plans to 
 
 I started this project as an excuse to teach myself jQuery Mobile. I would be happy if anyone finds it useful.
 
+Screenshots are available in /doc/screenshots folder.
+
 ## Features
 
 - Easy installation (or not too difficult, anyway).
