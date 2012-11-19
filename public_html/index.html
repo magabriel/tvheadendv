@@ -12,23 +12,17 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>TVHeadend viewer</title>
 	<link rel="shortcut icon" href="favicon.ico">
-	<link rel="stylesheet" href="js/jquery/jquery.mobile-1.1.0.min.css" />
+	<link rel="stylesheet" href="js/jquery/jquery.mobile-1.2.0.min.css" />
 	<link rel="stylesheet" href="css/styles.css" />
 	
-	<script src="js/jquery/jquery-1.7.1.min.js"></script>
+	<script src="js/jquery/jquery-1.8.3.min.js"></script>
 	<script src="js/jquery/jquery.dst.js"></script>
 	<script src="js/jquery/jquery.localize.js"></script>
 	<script src="js/utils.js"></script>
 	<script src="js/site.js"></script>
-	<script src="js/jquery/jquery.mobile-1.1.0.min.js"></script>
+	<script src="js/jquery/jquery.mobile-1.2.0.min.js"></script>
 	<script src="js/jquery/jqm.page.params.js"></script>
-
-
-    <!-- PhoneGap when ready
-	<script type="text/javascript" charset="utf-8" src="js/phonegap/cordova-1.5.0.js"></script>
-	 -->
 </head>
-
 
 <body>
 
@@ -269,11 +263,19 @@
 		<div data-role="content">
 			<form action="#" id="form_config">
 				<div data-role="fieldcontain">
-					<label for="fld_serverip" rel="localize[tvheadend-ip]">Tvheadend
-						IP:</label> <input type="text" name="fld_serverip" id="fld_serverip"
+					<label for="fld_serverip" rel="localize[tvheadend-ip]">Tvheadend IP:</label> 
+					<input type="text" name="fld_serverip" id="fld_serverip"
 						value="" />
 				</div>
-							
+
+				<div data-role="fieldcontain">
+					<label for="fld_language" rel="localize[language]">Language:</label> 
+						<select name="fld_language" id="fld_language">
+						<option value="en">English</option>
+						<option value="es">Español</option>
+					</select>
+				</div>
+											
 				<div data-role="fieldcontain">
 					<label for="fld_linktype" rel="localize[link-type]">Link
 						type:</label> <select name="fld_linktype" id="fld_linktype">
