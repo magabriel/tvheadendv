@@ -18,6 +18,7 @@
     "tvheadend-ip": "IP de TVheadend",
     "port": "Puerto",
     "link-type": "Tipo de enlace",
+    "language": "Idioma",
     "defaults": "Por defecto",
     "save": "Guardar",
     "epg-event": "Evento", 
