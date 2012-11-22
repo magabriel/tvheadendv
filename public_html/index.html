@@ -18,7 +18,7 @@
 	<script src="js/jquery/jquery-1.8.3.min.js"></script>
 	<script src="js/jquery/jquery.dst.js"></script>
 	<script src="js/jquery/jquery.localize.js"></script>
-	<script src="js/utils.js"></script>
+	<script src="js/tools.js"></script>
 	<script src="js/site.js"></script>
 	<script src="js/jquery/jquery.mobile-1.2.0.min.js"></script>
 	<script src="js/jquery/jqm.page.params.js"></script>
@@ -261,7 +261,7 @@
 		<!-- /header -->
 
 		<div data-role="content">
-			<form action="#" id="form_config">
+			<form action="#" onsubmit="return false" id="form_config">
 				<div data-role="fieldcontain">
 					<label for="fld_serverip" rel="localize[tvheadend-ip]">Tvheadend IP:</label> 
 					<input type="text" name="fld_serverip" id="fld_serverip"
