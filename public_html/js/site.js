@@ -10,8 +10,6 @@
 var Mags = Mags || {};
 Mags.Tvhv = Mags.Tvhv || {};
 
-/* Everything goes into the namespace */
-
 /*******************************************************************************
  * Initialization
  * *****************************************************************************
@@ -20,7 +18,6 @@ Mags.Tvhv.init = Mags.Tvhv.init || {};
 
 (function($, self) {
 	(self.init = function() {
-		console.debug('self.init');
 
 		/*
 		 * Setup when DOM ready
@@ -28,10 +25,13 @@ Mags.Tvhv.init = Mags.Tvhv.init || {};
 		$(document).ready(function() {
 			console.debug('document.ready');
 
+			// Retrieve saved values
+			self.data.config.load();
+
 			/*
-			 * Set the language from saved value and translate everything
+			 * Set the language and translate everything
 			 */
-			$.setLanguage($.DSt.get('language'));
+			$.setLanguage(self.data.config.values.language);
 			$("body").translate();
 		});
 
@@ -41,12 +41,14 @@ Mags.Tvhv.init = Mags.Tvhv.init || {};
 		$(document).on("mobileinit", function() {
 			console.debug('document.mobileinit');
 
+			// UI defaults
+			$.mobile.loader.prototype.options.theme = "a";
+
 			// Load data
 			self.helpers.tvheadend.init();
 		});
 
 	})();
-
 })(jQuery, Mags.Tvhv);
 
 /*******************************************************************************
@@ -57,6 +59,7 @@ Mags.Tvhv.events = Mags.Tvhv.events || {};
 
 (function($, self) {
 	(self.events = function() {
+
 		/*
 		 * Retrieve the parameters sent to any window (see jqm.page.params.js)
 		 */
@@ -108,18 +111,27 @@ Mags.Tvhv.data = Mags.Tvhv.data || {};
 		 */
 		config : {
 			defaults : {
-				serverProtocol : '',
-				serverIP : '',
-				serverPort : '9981', // Cannot be changed in TVH
 				linkType : 'stream',
 				language : 'en',
 			},
 			values : {
-				serverProtocol : '',
-				serverIP : '',
-				serverPort : '',
 				linkType : '',
 				language : '',
+			},
+
+			setDefaults : function() {
+				this.values.linkType = this.defaults.linkType;
+				this.values.language = this.defaults.language;
+			},
+
+			load : function() {
+				this.values.linkType = $.DSt.get('linkType') || this.defaults.linkType;
+				this.values.language = $.DSt.get('language') || this.defaults.language;
+			},
+
+			save : function() {
+				$.DSt.set('linkType', this.values.linkType);
+				$.DSt.set('language', this.values.language);
 			}
 		},
 
@@ -180,30 +192,26 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 		$(document).on('pagebeforeshow', '#page_channeltags', function(event) {
 			console.debug('page_channeltags.pagebeforeshow');
 
-			// Load data if needed
-			if (!self.helpers.tvheadend.data.isLoaded) {
-				self.helpers.tvheadend.refresh();
-				$.mobile.changePage("#page_loading");
-				return;
-			}
+			// Fill the list asynchronously
+			self.helpers.pageLoading.show();
 
-			// Fill the list
-			$(".list_channeltags").empty();
+			var listFiller = new Mags.Tools.ListFiller($(".list_channeltags"));
+
 			$.each(self.helpers.tvheadend.data.channelTags.entries, function(i, tag) {
-				var item = '<li>'
-						+ '<a href="#page_channels?channeltag='
-						+ tag.identifier
-						+ '">'
-						+ '<h3>'
-						+ tag.name
-						+ '</h3>'
-						+ '</a>'
-						+ '</li>';
-				$(".list_channeltags").append(item);
+				listFiller.addItem(tag, function(tag) {
+					var item = [];
+					item.push('<li>');
+					item.push('<a href="#page_channels?channeltag=' + tag.identifier + '">');
+					item.push('<h3>' + tag.name + '</h3>');
+					item.push('</a>');
+					item.push('</li>');
+					return item.join('');
+				});
 			});
 
-			self.helpers.pageLoading.hide();
-			$('.list_channeltags').listview('refresh');
+			listFiller.run(function() {
+				self.helpers.pageLoading.hide();
+			});
 		});
 
 		// });
@@ -221,14 +229,7 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 		$(document).on('pagebeforeshow', '#page_channels', function(e, data) {
 			console.debug('page_channels.pagebeforeshow');
 
-			// Load data if needed
-			if (!self.helpers.tvheadend.data.isLoaded) {
-				self.helpers.tvheadend.refresh();
-				$.mobile.changePage("#page_loading");
-				return;
-			}
-
-			// Do not fill list if comming back from detail
+			// Do not fill list if coming back from detail
 			if (data
 					&& data.prevPage[0]
 					&& data.prevPage[0].dataset
@@ -266,7 +267,8 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 			// Look for parameters
 			if ($.mobile.pageData && $.mobile.pageData.channeltag) {
 				// Show channels for that channeltag
-				var channelTag = self.helpers.tvheadend.findChannelTag($.mobile.pageData.channeltag);
+				var channelTag = self.helpers.tvheadend
+						.findChannelTag($.mobile.pageData.channeltag);
 				$("#page_channels #txt_channeltag").show().html(channelTag.name);
 
 				var channels = self.helpers.tvheadend
@@ -295,40 +297,30 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 			// Save sort for next time
 			$("#page_channels #sort").html(sort);
 
-			// Let's accumulate here the items to add to the
-			// list
-			var listItems = [];
+			// Fill the list asynchronously
+			self.helpers.pageLoading.show();
 
-			/*
-			 * This function object will add an array of items to the list
-			 * variable
-			 */
-			var channelsListFillAll = function(channels) {
-				$.each(channels.entries, function(i, channel) {
+			var listFiller = new Mags.Tools.ListFiller($(".list_channels"));
 
+			$.each(channels.entries, function(i, channel) {
+				listFiller.addItem(channel, function(channel) {
 					var epg = '';
 
-					// Retrieve the current
-					// EPG
-					// entry for the channel
+					// Retrieve the current EPG entry for the channel
 					var epgEntryCurrent = self.helpers.tvheadend
 							.findEpgCurrentByChannel(channel.chid);
 					if (epgEntryCurrent) {
 						epg += self.helpers.epgFormat.current(epgEntryCurrent);
 					}
-					;
 
-					// Retrieve the next EPG
-					// entry
+					// Retrieve the next EPG entry
 					var epgEntryNext = self.helpers.tvheadend
 							.findEpgNextByChannel(channel.chid, epgEntryCurrent);
 					if (epgEntryNext) {
 						epg += self.helpers.epgFormat.next(epgEntryNext);
 					}
-					;
 
-					// Create the EPG info
-					// link
+					// Create the EPG info link
 					var epgPar = [];
 					epgPar.push('chid=' + channel.chid);
 
@@ -341,64 +333,40 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 					}
 					var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
 
-					// Create the stream url
-					// link
+					// Create the stream url link
 					var streamLink = self.helpers.tvheadend.getChannelStreamUrl(channel.chid);
 
-					listItems.push('<li>');
+					var item = [];
+					item.push('<li>');
 
 					// Crate the list item
 					channel.number = channel.number ? channel.number : '';
-					listItems.push('<a href="' + epgInfoLink + '">');
-					listItems.push('<h3 class="channel-name-block">');
-					listItems.push('<span class="channel-number">' + channel.number + '</span>');
-					listItems.push('<span class="channel-icon"><img src="'
-							+ channel.ch_icon
-							+ '"></span>');
-					listItems.push('<span class="channel-name">' + channel.name + '</span></h3>');
-					listItems.push(epg);
-					listItems.push('</a>');
+					item.push('<a href="' + epgInfoLink + '">');
+					item.push('<h3 class="channel-name-block">');
+					item.push('<span class="channel-number">' + channel.number + '</span>');
+					if (channel.ch_icon || '') {
+						item.push('<span class="channel-icon"><img src="'
+								+ channel.ch_icon
+								+ '"></span>');
+					}
+					item.push('<span class="channel-name">' + channel.name + '</span></h3>');
+					item.push(epg);
+					item.push('</a>');
 
-					listItems.push('<a href="' + streamLink + '" target="_blank"/>');
+					item.push('<a href="' + streamLink + '" target="_blank"/>');
 
 					// Finished
-					listItems.push('</li>');
+					item.push('</li>');
+
+					return item.join('');
 				});
-			};
-
-			/*
-			 * This function object will wrapup the list filling
-			 */
-			var channelsWrapUp = function() {
-				$('#page_channels .list_channels').empty().append(listItems.join(''))
-						.listview('refresh');
-
-				self.helpers.pageLoading.hide();
-			};
-
-			// We use a task queue to avoid GUI freezing
-			var tasks = [];
-
-			var size = 1; // Items subarray size, adjustable for performance
-			// tweaking
-
-			// Create a task for each subarray
-			$.each(channels.entries, function(i, channelEntry) {
-				if ((i % size) == 0) {
-					var slice = channels.entries.slice(i, i + size);
-					slice.entries = slice;
-					tasks.push([ channelsListFillAll, slice ]);
-				}
 			});
 
-			// Create a task to finish the list
-			tasks.push(channelsWrapUp);
-
-			// Run all tasks in order
-			Mags.Tools.runTasks(tasks);
+			listFiller.run(function() {
+				self.helpers.pageLoading.hide();
+			});
 		}
 
-		// });
 	})();
 })($, Mags.Tvhv);
 
@@ -415,10 +383,11 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 		$(document).on('pagebeforeshow', '#page_epg', function(e, data) {
 			console.debug('page_epg.pagebeforeshow');
 
-			// Load data if needed
-			if (!self.helpers.tvheadend.data.isLoaded) {
-				self.helpers.tvheadend.refresh();
-				$.mobile.changePage("#page_loading");
+			// Do not fill list if coming back from detail
+			if (data
+					&& data.prevPage[0]
+					&& data.prevPage[0].dataset
+					&& data.prevPage[0].dataset.url == 'page_epgevent') {
 				return;
 			}
 
@@ -453,7 +422,6 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 			self.helpers.pageLoading.show();
 			setTimeout(fillEpgList, 0, self.helpers.tvheadend.data.epg, sort);
 		}
-		;
 
 		/* 
 		 * Fill epg list
@@ -469,120 +437,106 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 			} else if (sort == 'channel') {
 				epglist.entries = Mags.Tools.sortByKey(epglist.entries, 'channel:s,start:n', true);
 			}
-			;
 
 			// Save sort for next time
 			$("#page_epg #sort").html(sort);
 
-			// Let's accumulate here the items to add to the
-			// list
-			var listItems = [];
-
 			// Current channel (for sorting by channel)
 			var currChannel = '';
 
-			/* 
-			 * This function object will add an array of items to the list variable 
-			 */
-			epgListFillAll = function(epglist) {
+			// Fill the list asynchronously
+			self.helpers.pageLoading.show();
 
-				var epg, channel, epgPar = [], epgInfoLink, streamLink, epgEntryCurrent;
-				$.each(epglist.entries, function(i, epgEntry) {
-					epg = '';
+			var listFiller = new Mags.Tools.ListFiller($('#page_epg .list_epg'));
 
-					channel = self.helpers.tvheadend.findChannelById(epgEntry.channelid);
-
-					if (sort == 'channel') {
-						if (epgEntry.channelid != currChannel) {
-							listItems.push('<li data-role="list-divider" class="channel-group">');
-							listItems.push('<span class="channel-icon">');
-							listItems.push('<img src="'
-									+ channel.ch_icon
-									+ '" onerror="this.style.display = \'none\'">');
-							listItems.push('</span>');
-							listItems.push('<span class="channel-name">'
-									+ epgEntry.channel
-									+ '</span></li>');
-							currChannel = epgEntry.channelid;
-						}
-					}
-
-					// Create the EPG info
-					// link
-					epgPar = [];
-					epgPar.push('chid=' + epgEntry.channelid);
-
-					epgEntryCurrent = self.helpers.tvheadend
-							.findEpgCurrentByChannel(epgEntry.channelid);
-					if (epgEntryCurrent && epgEntryCurrent.id == epgEntry.id) {
-						epg += self.helpers.epgFormat.current(epgEntry);
-						epgPar.push('current=' + epgEntry.id);
-					} else {
-						epg += self.helpers.epgFormat.next(epgEntry);
-						epgPar.push('next=' + epgEntry.id);
-					}
-					;
-					epgInfoLink = '#page_epgevent?' + epgPar.join('&');
-
-					// Create the stream url link
-					streamLink = self.helpers.tvheadend.getChannelStreamUrl(epgEntry.channelid);
-
-					listItems.push('<li>');
-
-					if (sort == 'channel') {
-						listItems.push('<a href="' + epgInfoLink + '">' + epg + '</a>');
-					} else { // 'date'
-						listItems.push('<a href="' + epgInfoLink + '">');
-						listItems.push('<h3 class="channel-name-block">');
-						listItems.push('<span class="channel-icon">');
-						listItems.push('<img src="'
-								+ channel.ch_icon
-								+ '" onerror="this.style.display = \'none\'">');
-						listItems.push('</span>');
-						listItems.push('<span class="channel-name">'
-								+ epgEntry.channel
-								+ '</span></h3>');
-						listItems.push(epg);
-						listItems.push('</a>');
-					}
-
-					listItems.push('<a href="'
-							+ streamLink
-							+ '" target="_blank" data-split-icon="info" />');
-
-					listItems.push('</li>');
-				});
-
-			};
-
-			/* 
-			 * This function object will wrapup the list filling
-			 */
-			epgWrapUp = function() {
-				$("#page_epg .list_epg").empty().append(listItems.join('')).listview('refresh');
-				self.helpers.pageLoading.hide();
-			};
-
-			// We use a task queue to avoid GUI freezing
-			tasks = [];
-
-			size = 1; // Items subarray size, adjustable for performance tweaking
-
-			// Create a task for each subarray
 			$.each(epglist.entries, function(i, epgEntry) {
-				if ((i % size) == 0) {
-					slice = epglist.entries.slice(i, i + size);
-					slice.entries = slice;
-					tasks.push([ epgListFillAll, slice ]);
-				}
+						listFiller
+								.addItem(epgEntry, function(epgEntry) {
+
+									var item = [];
+
+									var epg = '';
+
+									var channel = self.helpers.tvheadend
+											.findChannelById(epgEntry.channelid);
+
+									if (sort == 'channel') {
+										if (epgEntry.channelid != currChannel) {
+											item
+													.push('<li data-role="list-divider" class="channel-group">');
+											item.push('<span class="channel-icon">');
+											if (channel.ch_icon || '') {
+												item
+														.push('<img src="'
+																+ channel.ch_icon
+																+ '" onerror="this.style.display = \'none\'">');
+											}
+											item.push('</span>');
+											item.push('<span class="channel-name">'
+													+ epgEntry.channel
+													+ '</span></li>');
+											currChannel = epgEntry.channelid;
+										}
+									}
+
+									// Create the EPG info link
+									var epgPar = [];
+									epgPar.push('chid=' + epgEntry.channelid);
+
+									var epgEntryCurrent = self.helpers.tvheadend
+											.findEpgCurrentByChannel(epgEntry.channelid);
+									if (epgEntryCurrent && epgEntryCurrent.id == epgEntry.id) {
+										epg += self.helpers.epgFormat.current(epgEntry);
+										epgPar.push('current=' + epgEntry.id);
+									} else {
+										epg += self.helpers.epgFormat.next(epgEntry);
+										epgPar.push('next=' + epgEntry.id);
+									}
+
+									var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
+
+									// Create the stream url link
+									var streamLink = self.helpers.tvheadend
+											.getChannelStreamUrl(epgEntry.channelid);
+
+									item.push('<li>');
+
+									if (sort == 'channel') {
+										item.push('<a href="' + epgInfoLink + '">' + epg + '</a>');
+									} else { // 'date'
+										item.push('<a href="' + epgInfoLink + '">');
+										item.push('<h3 class="channel-name-block">');
+										item.push('<span class="channel-icon">');
+										if (channel.ch_icon || '') {
+											item.push('<img src="'
+													+ channel.ch_icon
+													+ '" onerror="this.style.display = \'none\'">');
+										}
+										item.push('</span>');
+										item.push('<span class="channel-name">'
+												+ epgEntry.channel
+												+ '</span></h3>');
+										item.push(epg);
+										item.push('</a>');
+									}
+
+									item.push('<a href="'
+											+ streamLink
+											+ '" target="_blank" data-split-icon="info" />');
+
+									item.push('</li>');
+
+									return item.join('');
+								});
+
+					});
+
+			listFiller.run(function() {
+				self.helpers.pageLoading.hide();
 			});
 
-			// Create a task to finish the list
-			tasks.push(epgWrapUp);
-
-			// Run all tasks in order
-			Mags.Tools.runTasks(tasks);
 		}
+
 	})();
 })($, Mags.Tvhv);
 
@@ -596,13 +550,6 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 		// Init page contents
 		$(document).on('pagebeforeshow', '#page_epgevent', function(e, data) {
 			console.debug('page_epgevent.pagebeforeshow');
-
-			// Load data if needed
-			if (!self.helpers.tvheadend.data.isLoaded) {
-				self.helpers.tvheadend.refresh();
-				$.mobile.changePage("#page_loading");
-				return;
-			}
 
 			// Look for parameters
 			var chid, current, next;
@@ -621,6 +568,8 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 			var channel = self.helpers.tvheadend.findChannelById(chid);
 
 			if (channel) {
+				channel.ch_icon = channel.ch_icon || '';
+
 				text += '<h3 class="channel-name-block">'
 						+ '<span class="channel-icon">'
 						+ '<img src="'
@@ -664,17 +613,11 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 
 		// Defaults
 		$(document).on('click', '#page_config #btn_default', function() {
-			setDefaults();
+			self.data.config.setDefaults();
+			setValues();
 		});
 
-		function setDefaults() {
-			$("#page_config #fld_serverip").val(self.data.config.defaults.serverIP);
-			$("#page_config #fld_linktype").val(self.data.config.defaults.linkType);
-			$("#page_config #fld_language").val(self.data.config.defaults.language);
-		}
-
 		function setValues() {
-			$("#page_config #fld_serverip").val(self.data.config.values.serverIP);
 			$("#page_config #fld_linktype").val(self.data.config.values.linkType);
 			$("#page_config #fld_language").val(self.data.config.values.language);
 		}
@@ -705,34 +648,11 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 				}
 
 				// Get current values
-				ipOrHostname = $("#page_config #fld_serverip").val();
-				linktype = $("#page_config #fld_linktype").val();
-				language = $("#page_config #fld_language").val();
-
-				// Validate server name/IP
-				ipParts = ipOrHostname.split('.');
-				if (ipParts.length == 4) {
-					// If it looks like an IP it must validate
-					$.each(ipParts, function(i, part) {
-						if (!Mags.Tools.isNumber(part) || part > 255) {
-							err = true;
-							return false;
-						}
-					});
-					if (err) {
-						$("#page_config #fld_serverip").prev().addClass('error');
-						$("#page_config #fld_serverip").focus();
-						$("#page_config #form_config #message").text('ERROR: Not a valid IP')
-								.attr("rel", "localize[error.invalid-ip]").translate()
-								.fadeIn('fast');
-						return false;
-					}
-				}
+				self.data.config.values.linktype = $("#page_config #fld_linktype").val();
+				self.data.config.values.language = $("#page_config #fld_language").val();
 
 				// Save values
-				$.DSt.set('serverip', ipOrHostname);
-				$.DSt.set('linktype', linktype);
-				$.DSt.set('language', language);
+				self.data.config.save();
 
 				// Reload the whole html to apply the new settings (especially, the language change)
 				var url = $.mobile.path.parseUrl(window.location.href);
@@ -805,18 +725,9 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 				this.data.isLoading = false;
 			}
 
-			// UI Language
-			/*
-			var dstLanguage = $.DSt.get('language');
-			if (dstLanguage) {
-				self.data.config.values.language = dstLanguage;
-			} else {
-				self.data.config.values.language = self.data.config.defaults.language;
-			}
-			*/
-
-			// Ensure we have the server URL
-			this._checkserverUrl(reset);
+			// Get the server URL
+			var url = $.mobile.path.parseUrl(window.location.href);
+			this.serverUrl = url.domain;
 
 			// Use the already loaded data or retrieve it from server
 			if (this.data.isLoaded) {
@@ -852,56 +763,11 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 		},
 
 		/*
-		 * Check if the server url is populated
-		 */
-		_checkserverUrl : function(reset) {
-
-			if (this.serverUrl && !reset) {
-				// Already set
-				return;
-			}
-
-			// Set defaults
-			self.data.config.defaults.serverProtocol = location.protocol;
-			self.data.config.defaults.serverIP = location.hostname;
-
-			// Get saved values from DST
-			var dstServerIP = $.DSt.get('serverip');
-			var dstLinkType = $.DSt.get('linktype');
-
-			// Set saved values or defaults
-			if (dstServerIP) {
-				self.data.config.values.serverIP = dstServerIP;
-			} else {
-				self.data.config.values.serverIP = self.data.config.defaults.serverIP;
-			}
-
-			if (dstLinkType) {
-				self.data.config.values.linkType = dstLinkType;
-			} else {
-				self.data.config.values.linkType = self.data.config.defaults.linkType;
-			}
-
-			// Only default protocol and port
-			self.data.config.values.serverProtocol = self.data.config.defaults.serverProtocol;
-			self.data.config.values.serverPort = self.data.config.defaults.serverPort;
-
-			// Default tvheadend server and proxy url
-			var urlBase = self.data.config.values.serverProtocol
-					+ '//'
-					+ self.data.config.values.serverIP;
-			this.serverUrl = urlBase + ':' + self.data.config.values.serverPort;
-		},
-
-		/*
 		 * Send AJAX request to tvheadend
 		 */
 		_sendRequest : function(api, operation, resultCallback) {
 			/*
-			 * Default ajax parameters. They can only be used from a native app
-			 * because the "same origin" restriction doesn't apply. NOTE: Even
-			 * if this mobile web app is in the same server the restriction
-			 * would be active because of the different port (80 vs. 9981)
+			 * Set Ajax call parameters.  
 			 */
 			var url = this.serverUrl + '/' + api;
 			var data = 'op=' + operation;
@@ -1035,11 +901,9 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 		 * Return the next EPG info for a channel
 		 */
 		findEpgNextByChannel : function(channelid, currentEpgEntry) {
-			var currStart = new Date();
 			var currEnd = new Date();
 
 			if (currentEpgEntry) {
-				currStart = new Date(currentEpgEntry.start * 1000);
 				currEnd = new Date(currentEpgEntry.end * 1000);
 			}
 
@@ -1074,6 +938,7 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 			return this.serverUrl + '/playlist/channelid/' + chid;
 		}
+
 	};
 })($, Mags.Tvhv);
 
@@ -1135,6 +1000,7 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 			return epg;
 		}
+
 	};
 })($, Mags.Tvhv);
 
@@ -1146,14 +1012,19 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 	self.helpers.pageLoading = {
 
 		show : function() {
+			$(".pageLoading").remove();
 			$("body").append('<div class="pageLoading"/>');
+			$.mobile.loading('show');
+			/* showPageLoadingMsg is deprecated but is the only way to show
+			 * the loader from pagebeforeshow event (!?)
+			 */
 			setTimeout($.mobile.showPageLoadingMsg, 1);
-			setTimeout(self.helpers.pageLoading.hide, 15000);
 		},
 
 		hide : function() {
 			$(".pageLoading").remove();
-			setTimeout($.mobile.hidePageLoadingMsg, 1);
+			$.mobile.loading('hide');
 		}
+
 	};
 })($, Mags.Tvhv);

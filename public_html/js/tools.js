@@ -10,7 +10,7 @@ var Mags = Mags || {};
 Mags.Tools = Mags.Tools || {};
 
 (function($, self) {
-	
+
 	self.getISODateTime = function(d) {
 		// padding function
 		var s = function(a, b) {
@@ -181,17 +181,87 @@ Mags.Tools = Mags.Tools || {};
 })(jQuery, Mags.Tools);
 
 /*
+ * Class to manage asynchronous fill of a listview
+ */
+(function($, self) {
+
+	/**
+	 * Constructor
+	 * 
+	 * @param $list
+	 * @returns {self.ListFiller}
+	 */
+	self.ListFiller = function($list) {
+		this.$list = $list;
+		this.tasks = [];
+		this.items = [];
+	};
+
+	self.ListFiller.prototype = {
+
+		/**
+		 * Add one item to the task queue. A task item is made of a data element
+		 * with the data to be added to the listview and a function object that
+		 * transform the data element into a text representation of the listview
+		 * item to be added.
+		 * 
+		 * @param entry
+		 * @param fnFillOne
+		 */
+		addItem : function(entry, fnFillOne) {
+			this.tasks.push([ fnFillOne, entry ]);
+		},
+
+		/**
+		 * Run the tasks in the queue sequentially
+		 * 
+		 * @param fnWrapUp A function object to finish the list
+		 */
+		run : function(fnWrapUp) {
+			this.tasks.push([ function(me) {
+				me.$list.empty().append(me.items.join('')).listview('refresh')
+			}, this ]);
+			this.tasks.push(fnWrapUp);
+			this._doRun();
+		},
+
+		/**
+		 * Internal asynchronous function to execute one task
+		 * 
+		 * @param idx The next task index
+		 */
+		_doRun : function(idx) {
+			idx = idx || 0;
+			var task = this.tasks[idx];
+			if (typeof (task) == 'object' && (task instanceof Array)) {
+				this.items.push(task[0](task[1]));
+			} else {
+				this.items.push(task());
+			}
+			idx++;
+			var me = this;
+			if (idx < this.tasks.length) {
+				setTimeout(function() {
+					me._doRun(idx);
+				}, 1);
+			}
+		}
+	};
+
+})(jQuery, Mags.Tools);
+
+/*
  * A plugin to manage localization with jquery.localize.js
  */
 (function($) {
 
 	var options = {
-		pathPrefix : "js", // Where the transaltion files are
+		pathPrefix : "js", // Where the translation files are
 		skipLanguage : /^en/
 	}; // Default language (to avoid trying to translate it)
 
 	var $items;
-	
+
 	/*
 	 * jquery.localize doesn't work on buttons that have already been enhanced by
 	 * JQuery Mobile. We need to override the translation callback to provide an
