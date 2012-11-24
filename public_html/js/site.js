@@ -449,7 +449,8 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 
 			var listFiller = new Mags.Tools.ListFiller($('#page_epg .list_epg'));
 
-			$.each(epglist.entries, function(i, epgEntry) {
+			$
+					.each(epglist.entries, function(i, epgEntry) {
 						listFiller
 								.addItem(epgEntry, function(epgEntry) {
 
@@ -618,8 +619,17 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 		});
 
 		function setValues() {
-			$("#page_config #fld_linktype").val(self.data.config.values.linkType);
-			$("#page_config #fld_language").val(self.data.config.values.language);
+
+			$("#page_config input[name=fld_language]").each(function(i, item) {
+				$(item).attr("checked", $(item).val() == self.data.config.values.language)
+						.checkboxradio("refresh");
+			});
+			
+			$("#page_config input[name=fld_linktype]").each(function(i, item) {
+				$(item).attr("checked", $(item).val() == self.data.config.values.linkType)
+						.checkboxradio("refresh");
+			});
+
 		}
 
 		$(document).ready(function() {
@@ -648,8 +658,17 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 				}
 
 				// Get current values
-				self.data.config.values.linktype = $("#page_config #fld_linktype").val();
-				self.data.config.values.language = $("#page_config #fld_language").val();
+				$("#page_config input[name=fld_language]").each(function(i, item) {
+					if ($(item).attr("checked")) {
+						self.data.config.values.language = $(item).val();
+					}
+				});
+
+				$("#page_config input[name=fld_linktype]").each(function(i, item) {
+					if ($(item).attr("checked")) {
+						self.data.config.values.linkType = $(item).val();
+					}
+				});
 
 				// Save values
 				self.data.config.save();
@@ -930,9 +949,9 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 		/*
 		 * Return the stream url for a channel
-		 */
+		 */  
 		getChannelStreamUrl : function(chid) {
-			if (this.linkType == 'stream') {
+			if (self.data.config.values.linkType  == 'stream') {
 				return this.serverUrl + '/stream/channelid/' + chid;
 			}
 

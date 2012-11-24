@@ -8,227 +8,227 @@
 <html>
 
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>TVHeadend viewer</title>
-	<link rel="shortcut icon" href="favicon.ico">
-	<link rel="stylesheet" href="js/jquery/jquery.mobile-1.2.0.min.css" />
-	<link rel="stylesheet" href="css/styles.css" />
-	
-	<script src="js/jquery/jquery-1.8.3.min.js"></script>
-	<script src="js/jquery/jquery.dst.js"></script>
-	<script src="js/jquery/jquery.localize.js"></script>
-	<script src="js/tools.js"></script>
-	<script src="js/site.js"></script>
-	<script src="js/jquery/jquery.mobile-1.2.0.min.js"></script>
-	<script src="js/jquery/jqm.page.params.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TVHeadend viewer</title>
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="stylesheet" href="js/jquery/jquery.mobile-1.2.0.min.css" />
+<link rel="stylesheet" href="css/styles.css" />
+
+<script src="js/jquery/jquery-1.8.3.min.js"></script>
+<script src="js/jquery/jquery.dst.js"></script>
+<script src="js/jquery/jquery.localize.js"></script>
+<script src="js/tools.js"></script>
+<script src="js/site.js"></script>
+<script src="js/jquery/jquery.mobile-1.2.0.min.js"></script>
+<script src="js/jquery/jqm.page.params.js"></script>
 </head>
 
 <body>
 
-	<!-- Start page: #loading -->
-	<div data-role="page" id="page_loading" data-id="header">
+    <!-- Start page: #loading -->
+    <div data-role="page" id="page_loading" data-id="header">
 
-		<div data-role="header" data-position="fixed">
-			<h1>TVHeadend viewer</h1>
-		</div>
-		<!-- /header -->
+        <div data-role="header" data-position="fixed">
+            <h1>TVHeadend viewer</h1>
+        </div>
+        <!-- /header -->
 
-		<div data-role="content">
-			<h3 rel="localize[connecting]">Connecting, please wait...</h3>
-		</div>
-		<!-- /content -->
+        <div data-role="content">
+            <h3 rel="localize[connecting]">Connecting, please wait...</h3>
+        </div>
+        <!-- /content -->
 
-		<div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-			<h4><a href="#page_about">&copy; MAGS</a></h4>
-		</div>
-		<!-- /footer -->
+        <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
+        </div>
+        <!-- /footer -->
 
-	</div>
-	<!-- /page #loading -->
+    </div>
+    <!-- /page #loading -->
 
-	<!-- Start page: #error -->
-	<div data-role="dialog" id="page_error">
+    <!-- Start page: #error -->
+    <div data-role="dialog" id="page_error">
 
-		<div data-role="header" data-position="fixed">
-			<h1>TVHeadend viewer</h1>
-		</div>
-		<!-- /header -->
+        <div data-role="header" data-position="fixed">
+            <h1>TVHeadend viewer</h1>
+        </div>
+        <!-- /header -->
 
-		<div data-role="content" data-theme="e">
-			<p rel="localize[connection-error]">An error has been detected
-				during connection. You may need to check your configuration.</p>
+        <div data-role="content" data-theme="e">
+            <p rel="localize[connection-error]">An error has been detected during connection.</p>
 
-			<fieldset class="ui-grid-a">
-				<div class="ui-block-a">
-					<a href="#page_loading" id="btn_retry" data-role="button"
-						data-theme="b" rel="localize[retry]">Retry</a>
-				</div>
-				<div class="ui-block-b">
-					<a href="#page_config" id="btn_config" data-role="button"
-						rel="localize[configure]">Configure</a>
-				</div>
-			</fieldset>
+            <fieldset class="ui-grid-a">
+                <div class="ui-block-a">
+                    <a href="#page_loading" id="btn_retry" data-role="button" data-theme="b"
+                        rel="localize[retry]">Retry</a>
+                </div>
+            </fieldset>
 
-		</div>
-		<!-- /content -->
+        </div>
+        <!-- /content -->
 
-	</div>
-	<!-- /page #loading -->
+    </div>
+    <!-- /page #loading -->
 
-	<!-- Start page: #home -->
-	<div data-role="page" id="page_home">
+    <!-- Start page: #home -->
+    <div data-role="page" id="page_home">
 
-		<div data-role="header" data-position="fixed" data-id="header">
-			<h1>TVHeadend viewer</h1>
-			<a id="btn_config" href="#page_config" data-role="button" data-icon="gear"
-				class="ui-btn-right" data-theme="b" rel="localize[configure]">Config</a>
-		</div>
-		<!-- /header -->
+        <div data-role="header" data-position="fixed" data-id="header">
+            <h1>TVHeadend viewer</h1>
+            <a id="btn_config" href="#page_config" data-role="button" data-icon="gear"
+                class="ui-btn-right" data-theme="b" rel="localize[configure]">Config</a>
+        </div>
+        <!-- /header -->
 
-		<div data-role="content">
-			<div class="top">
-				<div id="logo">
-					<!-- <img src="images/logo.jpg" alt="TVHeadend viewer"/>  -->
-				</div>
-				<div id="text"></div>
-			</div>
+        <div data-role="content">
+            <div class="top">
+                <div id="logo">
+                    <!-- <img src="images/logo.jpg" alt="TVHeadend viewer"/>  -->
+                </div>
+                <div id="text"></div>
+            </div>
 
-			<ul data-role="listview" class="list_mainmenu" >
-				<li><a href="#page_channeltags"> <img
-						src="images/channeltags.png" alt="" />
-						<h3 rel="localize[channel-tags]">Channel tags</h3>
-				</a></li>
-				<li><a href="#page_channels"> <img
-						src="images/channels.png" alt="" />
-						<h3 rel="localize[channels]">Channels</h3>
-				</a></li>
-				<li><a href="#page_epg"> <img src="images/epg.png" alt="" />
-						<h3 rel="localize[guide]">Guide</h3>
-				</a></li>
-			</ul>
-		</div>
-		<!-- /content -->
+            <ul data-role="listview" class="list_mainmenu">
+                <li><a href="#page_channeltags"> <img src="images/channeltags.png" alt="" />
+                        <h3 rel="localize[channel-tags]">Channel tags</h3>
+                </a></li>
+                <li><a href="#page_channels"> <img src="images/channels.png" alt="" />
+                        <h3 rel="localize[channels]">Channels</h3>
+                </a></li>
+                <li><a href="#page_epg"> <img src="images/epg.png" alt="" />
+                        <h3 rel="localize[guide]">Guide</h3>
+                </a></li>
+            </ul>
+        </div>
+        <!-- /content -->
 
-		<div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-			<h4><a href="#page_about">&copy; MAGS</a></h4>
-		</div>
-		<!-- /footer -->
+        <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
+        </div>
+        <!-- /footer -->
 
-	</div>
-	<!-- /page #home -->
+    </div>
+    <!-- /page #home -->
 
-	<!-- Start page: #channeltags -->
-	<div data-role="page" id="page_channeltags">
+    <!-- Start page: #channeltags -->
+    <div data-role="page" id="page_channeltags">
 
-		<div data-role="header" data-position="fixed" data-id="header">
-			<a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
-				rel="localize[back]">Back</a>
-			<h1 rel="localize[channel-tags]">Channel tags</h1>
-		</div>
-		<!-- /header -->
+        <div data-role="header" data-position="fixed" data-id="header">
+            <a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
+                rel="localize[back]">Back</a>
+            <h1 rel="localize[channel-tags]">Channel tags</h1>
+        </div>
+        <!-- /header -->
 
-		<div data-role="content">
-			<ul data-role="listview" class="list_channeltags">
-				<li><p rel="localize[no-data]">No data</p></li>
-			</ul>
-		</div>
-		<!-- /content -->
+        <div data-role="content">
+            <ul data-role="listview" class="list_channeltags">
+                <li><p rel="localize[no-data]">No data</p></li>
+            </ul>
+        </div>
+        <!-- /content -->
 
-		<div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-			<h4><a href="#page_about">&copy; MAGS</a></h4>
-		</div>
-		<!-- /footer -->
+        <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
+        </div>
+        <!-- /footer -->
 
-	</div>
-	<!-- /page #channeltags -->
+    </div>
+    <!-- /page #channeltags -->
 
-	<!-- Start page: #channels -->
-	<div data-role="page" id="page_channels">
+    <!-- Start page: #channels -->
+    <div data-role="page" id="page_channels">
 
-		<div data-role="header" data-position="fixed" data-id="header">
-			<a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
-				rel="localize[back]">Back</a> <a href="#" id="btn_refresh"
-				data-role="button" data-icon="refresh" class="ui-btn-right"
-				data-theme="b" rel="localize[refresh]">Refresh</a>
-			<h1 id="lbl_channels" rel="localize[channels]">Channels</h1>
-			<h1 id="txt_channeltag" style="display:none"></h1>
+        <div data-role="header" data-position="fixed" data-id="header">
+            <a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
+                rel="localize[back]">Back</a> <a href="#" id="btn_refresh" data-role="button"
+                data-icon="refresh" class="ui-btn-right" data-theme="b" rel="localize[refresh]">Refresh</a>
+            <h1 id="lbl_channels" rel="localize[channels]">Channels</h1>
+            <h1 id="txt_channeltag" style="display: none"></h1>
 
-			<div data-role="navbar">
-				<ul>
-					<li><a id="btn_sort_number" href="#" 
-					       rel="localize[by-number]" class="ui-btn-active">By number</a></li>
-					<li><a id="btn_sort_name" href="#" 
-					       rel="localize[by-name]">By name</a></li>
-				</ul>
-			</div>
-			<!-- /navbar -->
-		</div>
-		<!-- /header -->
+            <div data-role="navbar">
+                <ul>
+                    <li><a id="btn_sort_number" href="#" rel="localize[by-number]"
+                        class="ui-btn-active">By number</a></li>
+                    <li><a id="btn_sort_name" href="#" rel="localize[by-name]">By name</a></li>
+                </ul>
+            </div>
+            <!-- /navbar -->
+        </div>
+        <!-- /header -->
 
         <div id="sort" style="display: none">number</div>
-            
-		<div data-role="content">
-			<ul data-role="listview" class="list_channels" data-id="header">
-				<li><p rel="localize[no-data]">No data</p></li>
-			</ul>
-		</div>
-		<!-- /content -->
 
-		<div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-			<h4><a href="#page_about">&copy; MAGS</a></h4>
-		</div>
-		<!-- /footer -->
+        <div data-role="content">
+            <ul data-role="listview" class="list_channels" data-id="header">
+                <li><p rel="localize[no-data]">No data</p></li>
+            </ul>
+        </div>
+        <!-- /content -->
 
-	</div>
-	<!-- /page #channels -->
+        <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
+        </div>
+        <!-- /footer -->
 
-	<!-- Start page: #epg -->
-	<div data-role="page" id="page_epg">
+    </div>
+    <!-- /page #channels -->
 
-		<div data-role="header" data-position="fixed" data-id="header">
-			<a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
-				rel="localize[back]">Back</a> <a href="#" id="btn_refresh"
-				data-role="button" data-icon="refresh" class="ui-btn-right"
-				data-theme="b" rel="localize[refresh]">Refresh</a>
-			<h1 rel="localize[guide]">Guide</h1>
+    <!-- Start page: #epg -->
+    <div data-role="page" id="page_epg">
 
-			<div data-role="navbar">
-				<ul>
-					<li><a id="btn_sort_date" href="#"
-						rel="localize[by-date-time]" class="ui-btn-active">By date/time</a></li>
-					<li><a id="btn_sort_channel" href="#"
-						rel="localize[by-channel]">By channel</a></li>
-				</ul>
-			</div>
-			<!-- /navbar -->
+        <div data-role="header" data-position="fixed" data-id="header">
+            <a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
+                rel="localize[back]">Back</a> <a href="#" id="btn_refresh" data-role="button"
+                data-icon="refresh" class="ui-btn-right" data-theme="b" rel="localize[refresh]">Refresh</a>
+            <h1 rel="localize[guide]">Guide</h1>
 
-		</div>
-		<!-- /header -->
-		
-		<div id="sort" style="display: none">date</div>
+            <div data-role="navbar">
+                <ul>
+                    <li><a id="btn_sort_date" href="#" rel="localize[by-date-time]"
+                        class="ui-btn-active">By date/time</a></li>
+                    <li><a id="btn_sort_channel" href="#" rel="localize[by-channel]">By
+                            channel</a></li>
+                </ul>
+            </div>
+            <!-- /navbar -->
 
-		<div data-role="content">
-			<ul data-role="listview" class="list_epg" data-divider-theme="d">
-				<li><p rel="localize[no-data]">No data</p></li>
-			</ul>
-		</div>
-		<!-- /content -->
+        </div>
+        <!-- /header -->
 
-		<div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-			<h4><a href="#page_about">&copy; MAGS</a></h4>
-		</div>
-		<!-- /footer -->
+        <div id="sort" style="display: none">date</div>
 
-	</div>
-	<!-- /page #epg -->
+        <div data-role="content">
+            <ul data-role="listview" class="list_epg" data-divider-theme="d">
+                <li><p rel="localize[no-data]">No data</p></li>
+            </ul>
+        </div>
+        <!-- /content -->
+
+        <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
+        </div>
+        <!-- /footer -->
+
+    </div>
+    <!-- /page #epg -->
 
     <!-- Start page: #epgevent -->
     <div data-role="page" id="page_epgevent">
 
         <div data-role="header" data-position="fixed" data-id="header">
             <a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
-                rel="localize[back]">Back</a> 
+                rel="localize[back]">Back</a>
             <h1 rel="localize[epg-event]">EPG event</h1>
         </div>
         <!-- /header -->
@@ -237,76 +237,95 @@
             <div id="text">
                 <p rel="localize[no-data]">No data</p>
             </div>
-            <a href="#" id="btn_watch" data-role="button" data-theme="b" data-inline="true" 
-               rel="localize[watch-channel]">Watch channel</a>
+            <a href="#" id="btn_watch" data-role="button" data-theme="b" data-inline="true"
+                rel="localize[watch-channel]">Watch channel</a>
         </div>
         <!-- /content -->
 
         <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-            <h4><a href="#page_about">&copy; MAGS</a></h4>
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
         </div>
         <!-- /footer -->
 
     </div>
     <!-- /page #epgevent -->
 
-	<!-- Start page: #config -->
-	<div data-role="page" id="page_config">
+    <!-- Start page: #config -->
+    <div data-role="page" id="page_config">
 
-		<div data-role="header" data-position="fixed" data-id="header">
-			<a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
-				rel="localize[back]">Back</a>
-			<h1 rel="localize[configuration]">Configuration</h1>
-		</div>
-		<!-- /header -->
+        <div data-role="header" data-position="fixed" data-id="header">
+            <a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
+                rel="localize[back]">Back</a>
+            <h1 rel="localize[configuration]">Configuration</h1>
+        </div>
+        <!-- /header -->
 
-		<div data-role="content">
-			<form action="#" onsubmit="return false" id="form_config">
-				<div data-role="fieldcontain">
-					<label for="fld_language" rel="localize[language]">Language:</label> 
-						<select name="fld_language" id="fld_language">
-						<option value="en">English</option>
-						<option value="es">Español</option>
-					</select>
-				</div>
-											
-				<div data-role="fieldcontain">
-					<label for="fld_linktype" rel="localize[link-type]">Link
-						type:</label> <select name="fld_linktype" id="fld_linktype">
-						<option value="stream">Stream</option>
-						<option value="playlist">Playlist</option>
-					</select>
-				</div>
+        <div data-role="content">
+            <form action="#" onsubmit="return false" id="form_config">
 
-				<fieldset class="ui-grid-a">
-					<div class="ui-block-a">
-						<a href="#" id="btn_default" data-role="button" data-theme="a"
-							rel="localize[defaults]">Defaults</a>
-					</div>
-					<div class="ui-block-b">
-						<button type="submit" data-theme="b" rel="localize[save]">Save</button>
-					</div>
-				</fieldset>
+                <div data-role="fieldcontain">
+                    <fieldset data-role="controlgroup">
+                        <legend rel="localize[language]">Language:</legend>
+                        
+                        <input type="radio" name="fld_language" id="fld_language_en" value="en" />
+                        <label for="fld_language_en">English</label>
 
-				<div id="message" class="message" style="display: none"></div>
-			</form>
-		</div>
-		<!-- /content -->
+                        <input type="radio" name="fld_language" id="fld_language_es" value="es" />
+                        <label for="fld_language_es">Español</label>                        
+                    </fieldset>
+                </div>
+                
+                <div data-role="fieldcontain">
+                    <fieldset data-role="controlgroup">
+                        <legend rel="localize[link-type]">Link type:</legend>
+                        
+                        <input type="radio" name="fld_linktype" id="fld_linktype_stream" value="stream" />
+                        <label for="fld_linktype_stream">
+                            <h3 class="ui-li-heading">Stream</h3>
+                            <p class="ui-li-desc" rel="localize[stream-desctiption]">This is the better value for mobile devices.</p>
+                        </label>
+                        
+                        <input type="radio" name="fld_linktype" id="fld_linktype_playlist" value="playlist" />
+                        <label for="fld_linktype_playlist">
+                            <h3 class="ui-li-heading">Playlist</h3>
+                            <p class="ui-li-desc" rel="localize[playlist-desctiption]">Try this value if "stream" doesn't work.</p>
+                        </label>
+                    </fieldset>
+                </div>
 
-		<div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-			<h4><a href="#page_about">&copy; MAGS</a></h4>
-		</div>
-		<!-- /footer -->
+                <fieldset class="ui-grid-a">
+                    <div class="ui-block-a">
+                        <a href="#" id="btn_default" data-role="button" data-theme="a"
+                            rel="localize[defaults]">Defaults</a>
+                    </div>
+                    <div class="ui-block-b">
+                        <button type="submit" data-theme="b" rel="localize[save]">Save</button>
+                    </div>
+                </fieldset>
 
-	</div>
-	<!-- /page #config -->
-	
-	<!-- Start page: #about -->
+                <div id="message" class="message" style="display: none"></div>
+            </form>
+        </div>
+        <!-- /content -->
+
+        <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
+        </div>
+        <!-- /footer -->
+
+    </div>
+    <!-- /page #config -->
+
+    <!-- Start page: #about -->
     <div data-role="page" id="page_about">
 
         <div data-role="header" data-position="fixed" data-id="header">
             <a href="#" data-role="button" data-theme="b" data-icon="arrow-l" data-rel="back"
-                rel="localize[back]">Back</a> 
+                rel="localize[back]">Back</a>
             <h1 rel="localize[about]">About...</h1>
         </div>
         <!-- /header -->
@@ -320,7 +339,9 @@
         <!-- /content -->
 
         <div data-role="footer" data-theme="a" data-position="fixed" data-id="footer">
-            <h4><a href="#page_about">&copy; MAGS</a></h4>
+            <h4>
+                <a href="#page_about">&copy; MAGS</a>
+            </h4>
         </div>
         <!-- /footer -->
 

@@ -8,6 +8,26 @@
 	margin: 0 0;
 }
 
+/* Radiobuttons and checkboxes with descriptions
+ */
+.ui-checkbox .ui-li-heading, 
+.ui-radio .ui-li-heading {
+    margin-top:0;
+    white-space:normal;
+}
+
+.ui-checkbox .ui-li-desc, 
+.ui-radio .ui-li-desc {
+    white-space:normal;
+    margin-top: -0.2em;
+}
+
+.ui-checkbox .ui-icon, 
+.ui-radio .ui-icon {
+	top: 0 !important;
+	margin-top: 12px !important;
+}
+
 /* EPG item
  */
 .epg-title {

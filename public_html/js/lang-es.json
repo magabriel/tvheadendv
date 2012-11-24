@@ -1,5 +1,5 @@
 {
-    "connection-error": "Se ha detectado un error durante la conexión. Quizás deba revisar su configuración.",
+    "connection-error": "Se ha detectado un error durante la conexión.",
     "connecting": "Conectando. Espere, por favor.",
     "channel-tags": "Etiquetas de canal",
     "channels": "Canales",

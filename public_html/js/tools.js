@@ -215,32 +215,41 @@ Mags.Tools = Mags.Tools || {};
 		/**
 		 * Run the tasks in the queue sequentially
 		 * 
-		 * @param fnWrapUp A function object to finish the list
+		 * @param fnWrapUp
+		 *            A function object to finish the list
 		 */
 		run : function(fnWrapUp) {
+			// Push a task to append all the items to the listview and refresh it
 			this.tasks.push([ function(me) {
 				me.$list.empty().append(me.items.join('')).listview('refresh')
 			}, this ]);
+			// Push the real wrapup function
 			this.tasks.push(fnWrapUp);
+			// And run everything
 			this._doRun();
 		},
 
 		/**
-		 * Internal asynchronous function to execute one task
+		 * Internal recursive function to execute all task in sequence
 		 * 
-		 * @param idx The next task index
+		 * @param idx
+		 *            The next task index
 		 */
 		_doRun : function(idx) {
 			idx = idx || 0;
+			// Get the task and execute it
 			var task = this.tasks[idx];
 			if (typeof (task) == 'object' && (task instanceof Array)) {
+				// A task with data
 				this.items.push(task[0](task[1]));
 			} else {
+				// Without data
 				this.items.push(task());
 			}
 			idx++;
 			var me = this;
 			if (idx < this.tasks.length) {
+				// Call self to execute next task
 				setTimeout(function() {
 					me._doRun(idx);
 				}, 1);
