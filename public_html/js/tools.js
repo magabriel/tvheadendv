@@ -11,31 +11,32 @@ Mags.Tools = Mags.Tools || {};
 
 (function($, self) {
 
-	self.getISODateTime = function(d) {
-		// padding function
-		var s = function(a, b) {
-			return (1e15 + a + "").slice(-b);
-		};
+	self.getISODateTime =
+			function(d) {
+				// padding function
+				var s = function(a, b) {
+					return (1e15 + a + "").slice(-b);
+				};
 
-		// default date parameter
-		if (typeof d === 'undefined') {
-			d = new Date();
-		}
-		;
+				// default date parameter
+				if (typeof d === 'undefined') {
+					d = new Date();
+				}
+				;
 
-		// return ISO datetime
-		return d.getFullYear()
-				+ '-'
-				+ s(d.getMonth() + 1, 2)
-				+ '-'
-				+ s(d.getDate(), 2)
-				+ ' '
-				+ s(d.getHours(), 2)
-				+ ':'
-				+ s(d.getMinutes(), 2)
-				+ ':'
-				+ s(d.getSeconds(), 2);
-	};
+				// return ISO datetime
+				return d.getFullYear()
+						+ '-'
+						+ s(d.getMonth() + 1, 2)
+						+ '-'
+						+ s(d.getDate(), 2)
+						+ ' '
+						+ s(d.getHours(), 2)
+						+ ':'
+						+ s(d.getMinutes(), 2)
+						+ ':'
+						+ s(d.getSeconds(), 2);
+			};
 
 	self.getDisplayTime = function(d) {
 		// padding function
@@ -226,7 +227,7 @@ Mags.Tools = Mags.Tools || {};
 			// Push the real wrapup function
 			this.tasks.push(fnWrapUp);
 			// And run everything
-			this._doRun();
+			this._doRun(0);
 		},
 
 		/**
@@ -236,7 +237,6 @@ Mags.Tools = Mags.Tools || {};
 		 *            The next task index
 		 */
 		_doRun : function(idx) {
-			idx = idx || 0;
 			// Get the task and execute it
 			var task = this.tasks[idx];
 			if (typeof (task) == 'object' && (task instanceof Array)) {

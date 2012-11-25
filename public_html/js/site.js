@@ -58,43 +58,39 @@ Mags.Tvhv.init = Mags.Tvhv.init || {};
 Mags.Tvhv.events = Mags.Tvhv.events || {};
 
 (function($, self) {
-	(self.events = function() {
+	(self.events =
+			function() {
 
-		/*
-		 * Retrieve the parameters sent to any window (see jqm.page.params.js)
-		 */
-		$(document).on("pagebeforechange", function(event, data) {
-			$.mobile.pageData = (data && data.options && data.options.pageData)
-					? data.options.pageData
-					: null;
-		});
+				/*
+				 * Retrieve the parameters sent to any window (see jqm.page.params.js)
+				 */
+				$(document).on("pagebeforechange", function(event, data) {
+					$.mobile.pageData = (data && data.options && data.options.pageData) ? data.options.pageData : null;
+				});
 
-		/*
-		 * Timeout event (from ajax)
-		 */
-		$(document).on('timeout', function(event, data) {
-			self.helpers.pageLoading.hide();
-			$.mobile.changePage("#page_error");
-		});
+				/*
+				 * Timeout event (from ajax)
+				 */
+				$(document).on('timeout', function(event, data) {
+					self.helpers.pageLoading.hide();
+					$.mobile.changePage("#page_error");
+				});
 
-		/*
-		 * Track some other events (for debugging)
-		 */
-		var events = 'initdone pagebeforecreate pagecreate pageinit pagebeforechange timeout dataloaded';
-		$(document)
-				.on(events, function(event, data) {
-					var url = (event
-							&& event.target
-							&& event.target.dataset
-							&& event.target.dataset.url ? event.target.dataset.url : '');
-					var toPage = (data && data.toPage && typeof data.toPage == 'string'
-							? data.toPage
-							: '');
+				/*
+				 * Track some other events (for debugging)
+				 */
+				var events = 'initdone pagebeforecreate pagecreate pageinit pagebeforechange timeout dataloaded';
+				$(document).on(events, function(event, data) {
+					var url =
+							(event && event.target && event.target.dataset && event.target.dataset.url
+									? event.target.dataset.url
+									: '');
+					var toPage = (data && data.toPage && typeof data.toPage == 'string' ? data.toPage : '');
 
 					console.debug('document.' + event.type + ' ' + url + toPage);
 				});
 
-	})();
+			})();
 })(jQuery, Mags.Tvhv);
 
 /*******************************************************************************
@@ -134,6 +130,33 @@ Mags.Tvhv.data = Mags.Tvhv.data || {};
 				$.DSt.set('language', this.values.language);
 			}
 		},
+
+		cache : {
+			channelsList : {
+				sortedByName : null,
+				sortedByNumber : null,
+				channelTag : null,
+				clear : function() {
+					this.sortedByName = null;
+					this.sortedByNumber = null;
+					this.channelTag = null;
+				}
+			},
+			epgList : {
+				sortedByDate : null,
+				sortedByChannel : null,
+				clear : function() {
+					this.sortedByChannel = null;
+					this.sortedByDate = null;
+				}
+			},
+
+			clear : function() {
+				this.channelsList.clear();
+				this.epgList.clear();
+			}
+
+		}
 
 	};
 })($, Mags.Tvhv);
@@ -223,151 +246,172 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
  * =============================================================================
  */
 (function($, self) {
-	(self.pages.channels = function() {
+	(self.pages.channels =
+			function() {
 
-		// Init page conntents
-		$(document).on('pagebeforeshow', '#page_channels', function(e, data) {
-			console.debug('page_channels.pagebeforeshow');
+				// Init page contents
+				$(document).on('pagebeforeshow', '#page_channels', function(e, data) {
+					console.debug('page_channels.pagebeforeshow');
 
-			// Do not fill list if coming back from detail
-			if (data
-					&& data.prevPage[0]
-					&& data.prevPage[0].dataset
-					&& data.prevPage[0].dataset.url == 'page_epgevent') {
-				return;
-			}
-
-			fillPage();
-		});
-
-		// Sort by number / by name
-		$(document).on('click', '#page_channels #btn_sort_number', function() {
-			fillPage('number');
-		});
-		$(document).on('click', '#page_channels #btn_sort_name', function() {
-			fillPage('name');
-		});
-
-		// Data refresh
-		$(document).on('click', '#page_channels #btn_refresh', function() {
-			$(document).one('dataloaded', function(event) {
-				fillPage();
-			});
-			self.helpers.pageLoading.show();
-			self.helpers.tvheadend.refresh();
-		});
-
-		// Fill page
-		function fillPage(sort) {
-			self.helpers.pageLoading.show();
-
-			$("#page_channels #lbl_channels").hide();
-			$("#page_channels #txt_channeltag").hide();
-
-			// Look for parameters
-			if ($.mobile.pageData && $.mobile.pageData.channeltag) {
-				// Show channels for that channeltag
-				var channelTag = self.helpers.tvheadend
-						.findChannelTag($.mobile.pageData.channeltag);
-				$("#page_channels #txt_channeltag").show().html(channelTag.name);
-
-				var channels = self.helpers.tvheadend
-						.findChannelsByChannelTag($.mobile.pageData.channeltag);
-				setTimeout(fillChannelsList, 0, channels, sort);
-			} else {
-				// Show all channels
-				setTimeout(fillChannelsList, 0, self.helpers.tvheadend.data.channels, sort);
-				$("#page_channels #lbl_channels").show();
-			}
-		}
-
-		// Fill channels list
-		function fillChannelsList(channels, sort) {
-			// Look an apply sort type
-			if (!sort) {
-				sort = $("#page_channels #sort").html();
-			}
-
-			if (sort == 'number') {
-				channels.entries = Mags.Tools.sortByKey(channels.entries, 'number:n,name:s', true);
-			} else if (sort == 'name') {
-				channels.entries = Mags.Tools.sortByKey(channels.entries, 'name:s', true);
-			}
-
-			// Save sort for next time
-			$("#page_channels #sort").html(sort);
-
-			// Fill the list asynchronously
-			self.helpers.pageLoading.show();
-
-			var listFiller = new Mags.Tools.ListFiller($(".list_channels"));
-
-			$.each(channels.entries, function(i, channel) {
-				listFiller.addItem(channel, function(channel) {
-					var epg = '';
-
-					// Retrieve the current EPG entry for the channel
-					var epgEntryCurrent = self.helpers.tvheadend
-							.findEpgCurrentByChannel(channel.chid);
-					if (epgEntryCurrent) {
-						epg += self.helpers.epgFormat.current(epgEntryCurrent);
+					// Do not fill list if coming back from detail
+					if (data
+							&& data.prevPage[0]
+							&& data.prevPage[0].dataset
+							&& data.prevPage[0].dataset.url == 'page_epgevent') {
+						return;
 					}
 
-					// Retrieve the next EPG entry
-					var epgEntryNext = self.helpers.tvheadend
-							.findEpgNextByChannel(channel.chid, epgEntryCurrent);
-					if (epgEntryNext) {
-						epg += self.helpers.epgFormat.next(epgEntryNext);
-					}
-
-					// Create the EPG info link
-					var epgPar = [];
-					epgPar.push('chid=' + channel.chid);
-
-					if (epgEntryCurrent) {
-						epgPar.push('current=' + epgEntryCurrent.id);
-					}
-
-					if (epgEntryNext) {
-						epgPar.push('next=' + epgEntryNext.id);
-					}
-					var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
-
-					// Create the stream url link
-					var streamLink = self.helpers.tvheadend.getChannelStreamUrl(channel.chid);
-
-					var item = [];
-					item.push('<li>');
-
-					// Crate the list item
-					channel.number = channel.number ? channel.number : '';
-					item.push('<a href="' + epgInfoLink + '">');
-					item.push('<h3 class="channel-name-block">');
-					item.push('<span class="channel-number">' + channel.number + '</span>');
-					if (channel.ch_icon || '') {
-						item.push('<span class="channel-icon"><img src="'
-								+ channel.ch_icon
-								+ '"></span>');
-					}
-					item.push('<span class="channel-name">' + channel.name + '</span></h3>');
-					item.push(epg);
-					item.push('</a>');
-
-					item.push('<a href="' + streamLink + '" target="_blank"/>');
-
-					// Finished
-					item.push('</li>');
-
-					return item.join('');
+					fillPage();
 				});
-			});
 
-			listFiller.run(function() {
-				self.helpers.pageLoading.hide();
-			});
-		}
+				// Sort by number / by name
+				$(document).on('click', '#page_channels #btn_sort_number', function() {
+					fillPage('number');
+				});
+				$(document).on('click', '#page_channels #btn_sort_name', function() {
+					fillPage('name');
+				});
 
-	})();
+				// Data refresh
+				$(document).on('click', '#page_channels #btn_refresh', function() {
+					$(document).one('dataloaded', function(event) {
+						fillPage();
+					});
+					self.helpers.pageLoading.show();
+					self.helpers.tvheadend.refresh();
+				});
+
+				// Fill page
+				function fillPage(sort) {
+					self.helpers.pageLoading.show();
+
+					$("#page_channels #lbl_channels").hide();
+					$("#page_channels #txt_channeltag").hide();
+
+					var lastChannelTag = self.data.cache.channelsList.channelTag;
+					var newChannelTag;
+
+					// Look for parameters
+					if ($.mobile.pageData && $.mobile.pageData.channeltag) {
+						newChannelTag = $.mobile.pageData.channeltag;
+						
+						// Show channels for that channeltag
+						var channelTag = self.helpers.tvheadend.findChannelTag(newChannelTag);
+						$("#page_channels #txt_channeltag").show().html(channelTag.name);
+
+						var channels = self.helpers.tvheadend.findChannelsByChannelTag(newChannelTag);
+						setTimeout(fillChannelsList, 0, channels, sort);
+					} else {
+						// Show all channels
+						setTimeout(fillChannelsList, 0, self.helpers.tvheadend.data.channels, sort);
+						$("#page_channels #lbl_channels").show();
+					}
+
+					/* Cache must be cleared here because it may contain partial data (for a channel tag)
+					 * when we need to show another one or the whole list, or, conversely, the whole list when
+					 * we want to show only a channel tag.
+					 */
+					if (newChannelTag != lastChannelTag) {
+						self.data.cache.channelsList.clear();
+						self.data.cache.channelsList.channelTag = newChannelTag;
+					}
+				}
+
+				// Fill channels list
+				function fillChannelsList(channels, sort) {
+					// Look an apply sort type
+					if (!sort) {
+						sort = $("#page_channels #sort").html();
+					}
+
+					var entries = channels.entries;
+
+					// Sort and clone into cache
+					if (sort == 'number') {
+						if (!self.data.cache.channelsList.sortedByNumber) {
+							self.data.cache.channelsList.sortedByNumber =
+									Mags.Tools.sortByKey(entries, 'number:n,name:s', true).slice();
+						}
+						entries = self.data.cache.channelsList.sortedByNumber;
+					} else if (sort == 'name') {
+						if (!self.data.cache.channelsList.sortedByName) {
+							self.data.cache.channelsList.sortedByName =
+									Mags.Tools.sortByKey(entries, 'name:s', true).slice();
+						}
+						entries = self.data.cache.channelsList.sortedByName;
+					}
+
+					// Save sort for next time
+					$("#page_channels #sort").html(sort);
+
+					// Fill the list asynchronously
+					self.helpers.pageLoading.show();
+
+					var listFiller = new Mags.Tools.ListFiller($(".list_channels"));
+
+					$.each(entries, function(i, channel) {
+						listFiller.addItem(channel, function(channel) {
+							var epg = '';
+
+							// Retrieve the current EPG entry for the channel
+							var epgEntryCurrent = self.helpers.tvheadend.findEpgCurrentByChannel(channel.chid);
+							if (epgEntryCurrent) {
+								epg += self.helpers.epgFormat.current(epgEntryCurrent);
+							}
+
+							// Retrieve the next EPG entry
+							var epgEntryNext =
+									self.helpers.tvheadend.findEpgNextByChannel(channel.chid, epgEntryCurrent);
+							if (epgEntryNext) {
+								epg += self.helpers.epgFormat.next(epgEntryNext);
+							}
+
+							// Create the EPG info link
+							var epgPar = [];
+							epgPar.push('chid=' + channel.chid);
+
+							if (epgEntryCurrent) {
+								epgPar.push('current=' + epgEntryCurrent.id);
+							}
+
+							if (epgEntryNext) {
+								epgPar.push('next=' + epgEntryNext.id);
+							}
+							var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
+
+							// Create the stream url link
+							var streamLink = self.helpers.tvheadend.getChannelStreamUrl(channel.chid);
+
+							var item = [];
+							item.push('<li>');
+
+							// Crate the list item
+							channel.number = channel.number ? channel.number : '';
+							item.push('<a href="' + epgInfoLink + '">');
+							item.push('<h3 class="channel-name-block">');
+							item.push('<span class="channel-number">' + channel.number + '</span>');
+							if (channel.ch_icon || '') {
+								item.push('<span class="channel-icon"><img src="' + channel.ch_icon + '"></span>');
+							}
+							item.push('<span class="channel-name">' + channel.name + '</span></h3>');
+							item.push(epg);
+							item.push('</a>');
+
+							item.push('<a href="' + streamLink + '" target="_blank"/>');
+
+							// Finished
+							item.push('</li>');
+
+							return item.join('');
+						});
+					});
+
+					listFiller.run(function() {
+						self.helpers.pageLoading.hide();
+					});
+				}
+
+			})();
 })($, Mags.Tvhv);
 
 /* =============================================================================
@@ -375,170 +419,179 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
  * =============================================================================
  */
 (function($, self) {
-	(self.pages.epg = function() {
+	(self.pages.epg =
+			function() {
 
-		/* 
-		 * Init page contents
-		 */
-		$(document).on('pagebeforeshow', '#page_epg', function(e, data) {
-			console.debug('page_epg.pagebeforeshow');
+				/* 
+				 * Init page contents
+				 */
+				$(document).on('pagebeforeshow', '#page_epg', function(e, data) {
+					console.debug('page_epg.pagebeforeshow');
 
-			// Do not fill list if coming back from detail
-			if (data
-					&& data.prevPage[0]
-					&& data.prevPage[0].dataset
-					&& data.prevPage[0].dataset.url == 'page_epgevent') {
-				return;
-			}
+					// Do not fill list if coming back from detail
+					if (data
+							&& data.prevPage[0]
+							&& data.prevPage[0].dataset
+							&& data.prevPage[0].dataset.url == 'page_epgevent') {
+						return;
+					}
 
-			fillPage();
-		});
+					fillPage();
+				});
 
-		/*
-		 * Sort by date / by channel
-		 */
-		$(document).on('click', '#page_epg #btn_sort_date', function() {
-			fillPage('date');
-		});
-		$(document).on('click', '#page_epg #btn_sort_channel', function() {
-			fillPage('channel');
-		});
+				/*
+				 * Sort by date / by channel
+				 */
+				$(document).on('click', '#page_epg #btn_sort_date', function() {
+					fillPage('date');
+				});
+				$(document).on('click', '#page_epg #btn_sort_channel', function() {
+					fillPage('channel');
+				});
 
-		/* 
-		 * Data refresh
-		 */
-		$(document).on('click', '#page_epg #btn_refresh', function() {
-			$(document).one('dataloaded', function(event) {
-				fillPage();
-			});
-			self.helpers.pageLoading.show();
-			self.helpers.tvheadend.refresh();
-		});
+				/* 
+				 * Data refresh
+				 */
+				$(document).on('click', '#page_epg #btn_refresh', function() {
+					$(document).one('dataloaded', function(event) {
+						fillPage();
+					});
+					self.helpers.pageLoading.show();
+					self.helpers.tvheadend.refresh();
+				});
 
-		/* 
-		 * Fill page
-		 */
-		function fillPage(sort) {
-			self.helpers.pageLoading.show();
-			setTimeout(fillEpgList, 0, self.helpers.tvheadend.data.epg, sort);
-		}
+				/* 
+				 * Fill page
+				 */
+				function fillPage(sort) {
+					self.helpers.pageLoading.show();
+					setTimeout(fillepgList, 0, self.helpers.tvheadend.data.epg, sort);
+				}
 
-		/* 
-		 * Fill epg list
-		 */
-		function fillEpgList(epglist, sort) {
-			// Look an apply sort type
-			if (!sort) {
-				sort = $("#page_epg #sort").html();
-			}
+				/* 
+				 * Fill epg list
+				 */
+				function fillepgList(epgList, sort) {
+					// Look an apply sort type
+					if (!sort) {
+						sort = $("#page_epg #sort").html();
+					}
 
-			if (sort == 'date') {
-				epglist.entries = Mags.Tools.sortByKey(epglist.entries, 'start:n,end:n', true);
-			} else if (sort == 'channel') {
-				epglist.entries = Mags.Tools.sortByKey(epglist.entries, 'channel:s,start:n', true);
-			}
+					var entries = epgList.entries;
 
-			// Save sort for next time
-			$("#page_epg #sort").html(sort);
+					// Sort and clone into cache
+					if (sort == 'date') {
+						if (!self.data.cache.epgList.sortedByDate) {
+							self.data.cache.epgList.sortedByDate =
+									Mags.Tools.sortByKey(entries, 'start:n,end:n', true).slice();
+						}
+						entries = self.data.cache.epgList.sortedByDate;
+					} else if (sort == 'channel') {
+						if (!self.data.cache.epgList.sortedByChannel) {
+							self.data.cache.epgList.sortedByChannel =
+									Mags.Tools.sortByKey(entries, 'channel:s,start:n', true).slice();
+						}
+						entries = self.data.cache.epgList.sortedByChannel;
+					}
 
-			// Current channel (for sorting by channel)
-			var currChannel = '';
+					// Save sort for next time
+					$("#page_epg #sort").html(sort);
 
-			// Fill the list asynchronously
-			self.helpers.pageLoading.show();
+					// Current channel (for sorting by channel)
+					var currChannel = '';
 
-			var listFiller = new Mags.Tools.ListFiller($('#page_epg .list_epg'));
+					// Fill the list asynchronously
+					self.helpers.pageLoading.show();
 
-			$
-					.each(epglist.entries, function(i, epgEntry) {
-						listFiller
-								.addItem(epgEntry, function(epgEntry) {
+					var listFiller = new Mags.Tools.ListFiller($('#page_epg .list_epg'));
 
-									var item = [];
+					$.each(entries, function(i, epgEntry) {
+						listFiller.addItem(epgEntry, function(epgEntry) {
 
-									var epg = '';
+							var item = [];
 
-									var channel = self.helpers.tvheadend
-											.findChannelById(epgEntry.channelid);
+							var epg = '';
 
-									if (sort == 'channel') {
-										if (epgEntry.channelid != currChannel) {
-											item
-													.push('<li data-role="list-divider" class="channel-group">');
-											item.push('<span class="channel-icon">');
-											if (channel.ch_icon || '') {
-												item
-														.push('<img src="'
-																+ channel.ch_icon
-																+ '" onerror="this.style.display = \'none\'">');
-											}
-											item.push('</span>');
-											item.push('<span class="channel-name">'
-													+ epgEntry.channel
-													+ '</span></li>');
-											currChannel = epgEntry.channelid;
-										}
+							var channel = self.helpers.tvheadend.findChannelById(epgEntry.channelid);
+
+							if (sort == 'channel') {
+								if (epgEntry.channelid != currChannel) {
+									item.push('<li data-role="list-divider" class="channel-group">');
+									item.push('<span class="channel-icon">');
+									if (channel.ch_icon || '') {
+										item.push('<img src="');
+										item.push(channel.ch_icon);
+										item.push('" onerror="this.style.display = \'none\'">');
 									}
+									item.push('</span>');
+									item.push('<span class="channel-name">');
+									item.push(epgEntry.channel);
+									item.push('</span></li>');
+									currChannel = epgEntry.channelid;
+								}
+							}
 
-									// Create the EPG info link
-									var epgPar = [];
-									epgPar.push('chid=' + epgEntry.channelid);
+							// Create the EPG info link
+							var epgPar = [];
+							epgPar.push('chid=' + epgEntry.channelid);
 
-									var epgEntryCurrent = self.helpers.tvheadend
-											.findEpgCurrentByChannel(epgEntry.channelid);
-									if (epgEntryCurrent && epgEntryCurrent.id == epgEntry.id) {
-										epg += self.helpers.epgFormat.current(epgEntry);
-										epgPar.push('current=' + epgEntry.id);
-									} else {
-										epg += self.helpers.epgFormat.next(epgEntry);
-										epgPar.push('next=' + epgEntry.id);
-									}
+							if (self.helpers.tvheadend.epgEntryIsCurrent(epgEntry)) {
+								epg += self.helpers.epgFormat.current(epgEntry);
+								epgPar.push('current=' + epgEntry.id);
+							} else {
+								epg += self.helpers.epgFormat.next(epgEntry);
+								epgPar.push('next=' + epgEntry.id);
+							}
 
-									var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
+							var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
 
-									// Create the stream url link
-									var streamLink = self.helpers.tvheadend
-											.getChannelStreamUrl(epgEntry.channelid);
+							// Create the stream url link
+							var streamLink = self.helpers.tvheadend.getChannelStreamUrl(epgEntry.channelid);
 
-									item.push('<li>');
+							item.push('<li>');
 
-									if (sort == 'channel') {
-										item.push('<a href="' + epgInfoLink + '">' + epg + '</a>');
-									} else { // 'date'
-										item.push('<a href="' + epgInfoLink + '">');
-										item.push('<h3 class="channel-name-block">');
-										item.push('<span class="channel-icon">');
-										if (channel.ch_icon || '') {
-											item.push('<img src="'
-													+ channel.ch_icon
-													+ '" onerror="this.style.display = \'none\'">');
-										}
-										item.push('</span>');
-										item.push('<span class="channel-name">'
-												+ epgEntry.channel
-												+ '</span></h3>');
-										item.push(epg);
-										item.push('</a>');
-									}
+							if (sort == 'channel') {
+								item.push('<a href="');
+								item.push(epgInfoLink);
+								item.push('">');
+								item.push(epg);
+								item.push('</a>');
+							} else { // 'date'
+								item.push('<a href="');
+								item.push(epgInfoLink);
+								item.push('">');
+								item.push('<h3 class="channel-name-block">');
+								item.push('<span class="channel-icon">');
+								if (channel.ch_icon || '') {
+									item.push('<img src="');
+									item.push(channel.ch_icon);
+									item.push('" onerror="this.style.display = \'none\'">');
+								}
+								item.push('</span>');
+								item.push('<span class="channel-name">');
+								item.push(epgEntry.channel);
+								item.push('</span></h3>');
+								item.push(epg);
+								item.push('</a>');
+							}
 
-									item.push('<a href="'
-											+ streamLink
-											+ '" target="_blank" data-split-icon="info" />');
+							item.push('<a href="');
+							item.push(streamLink);
+							item.push('" target="_blank" data-split-icon="info" />');
 
-									item.push('</li>');
+							item.push('</li>');
 
-									return item.join('');
-								});
-
+							return item.join('');
+						});
 					});
 
-			listFiller.run(function() {
-				self.helpers.pageLoading.hide();
-			});
+					listFiller.run(function() {
+						self.helpers.pageLoading.hide();
+					});
 
-		}
+				}
 
-	})();
+			})();
 })($, Mags.Tvhv);
 
 /* =============================================================================
@@ -546,56 +599,57 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
  * =============================================================================
  */
 (function($, self) {
-	(self.pages.epgevent = function() {
+	(self.pages.epgevent =
+			function() {
 
-		// Init page contents
-		$(document).on('pagebeforeshow', '#page_epgevent', function(e, data) {
-			console.debug('page_epgevent.pagebeforeshow');
+				// Init page contents
+				$(document).on('pagebeforeshow', '#page_epgevent', function(e, data) {
+					console.debug('page_epgevent.pagebeforeshow');
 
-			// Look for parameters
-			var chid, current, next;
-			if ($.mobile.pageData && $.mobile.pageData.chid) {
-				chid = $.mobile.pageData.chid;
-			}
-			if ($.mobile.pageData && $.mobile.pageData.current) {
-				current = self.helpers.tvheadend.findEpg($.mobile.pageData.current);
-			}
-			if ($.mobile.pageData && $.mobile.pageData.next) {
-				next = self.helpers.tvheadend.findEpg($.mobile.pageData.next);
-			}
+					// Look for parameters
+					var chid, current, next;
+					if ($.mobile.pageData && $.mobile.pageData.chid) {
+						chid = $.mobile.pageData.chid;
+					}
+					if ($.mobile.pageData && $.mobile.pageData.current) {
+						current = self.helpers.tvheadend.findEpg($.mobile.pageData.current);
+					}
+					if ($.mobile.pageData && $.mobile.pageData.next) {
+						next = self.helpers.tvheadend.findEpg($.mobile.pageData.next);
+					}
 
-			var text = '';
+					var text = '';
 
-			var channel = self.helpers.tvheadend.findChannelById(chid);
+					var channel = self.helpers.tvheadend.findChannelById(chid);
 
-			if (channel) {
-				channel.ch_icon = channel.ch_icon || '';
+					if (channel) {
+						channel.ch_icon = channel.ch_icon || '';
 
-				text += '<h3 class="channel-name-block">'
-						+ '<span class="channel-icon">'
-						+ '<img src="'
-						+ channel.ch_icon
-						+ '" onerror="this.style.display = \'none\'"></span>'
-						+ '<span class="channel-name">'
-						+ channel.name
-						+ '</span></h3>';
-				var streamLink = self.helpers.tvheadend.getChannelStreamUrl(channel.chid);
-				$("#page_epgevent #content #btn_watch").attr("href", streamLink)
-						.attr('target', '_blank');
-			}
+						text +=
+								'<h3 class="channel-name-block">'
+										+ '<span class="channel-icon">'
+										+ '<img src="'
+										+ channel.ch_icon
+										+ '" onerror="this.style.display = \'none\'"></span>'
+										+ '<span class="channel-name">'
+										+ channel.name
+										+ '</span></h3>';
+						var streamLink = self.helpers.tvheadend.getChannelStreamUrl(channel.chid);
+						$("#page_epgevent #content #btn_watch").attr("href", streamLink).attr('target', '_blank');
+					}
 
-			if (current) {
-				text += self.helpers.epgFormat.current(current, true);
-			}
+					if (current) {
+						text += self.helpers.epgFormat.current(current, true);
+					}
 
-			if (next) {
-				text += current ? '<hr/>' : '';
-				text += self.helpers.epgFormat.next(next, true);
-			}
+					if (next) {
+						text += current ? '<hr/>' : '';
+						text += self.helpers.epgFormat.next(next, true);
+					}
 
-			$("#page_epgevent #content #text").html(text).trigger('create');
-		});
-	})();
+					$("#page_epgevent #content #text").html(text).trigger('create');
+				});
+			})();
 })($, Mags.Tvhv);
 
 /* =============================================================================
@@ -603,85 +657,86 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
  * =============================================================================
  */
 (function($, self) {
-	(self.pages.config = function() {
+	(self.pages.config =
+			function() {
 
-		// Init page contents
-		$(document).on('pagebeforeshow', '#page_config', function(e, data) {
-			console.debug('page_config.pagebeforeshow');
+				// Init page contents
+				$(document).on('pagebeforeshow', '#page_config', function(e, data) {
+					console.debug('page_config.pagebeforeshow');
 
-			setValues();
-		});
-
-		// Defaults
-		$(document).on('click', '#page_config #btn_default', function() {
-			self.data.config.setDefaults();
-			setValues();
-		});
-
-		function setValues() {
-
-			$("#page_config input[name=fld_language]").each(function(i, item) {
-				$(item).attr("checked", $(item).val() == self.data.config.values.language)
-						.checkboxradio("refresh");
-			});
-			
-			$("#page_config input[name=fld_linktype]").each(function(i, item) {
-				$(item).attr("checked", $(item).val() == self.data.config.values.linkType)
-						.checkboxradio("refresh");
-			});
-
-		}
-
-		$(document).ready(function() {
-			$('#page_config #form_config').submit(function(event) {
-
-				event.preventDefault();
-				var err = false;
-
-				// Reset errors
-				$("#page_config #form_config label").removeClass('error');
-				$("#page_config #form_config #message").text('').hide();
-
-				// Validation: all fields required
-				$("#page_config #form_config input").reverse().each(function(index, field) {
-					if ($(field).val() == null || $(field).val() == '') {
-						$(field).prev().addClass('error');
-						$(field).focus();
-						err = true;
-					}
+					setValues();
 				});
 
-				if (err) {
-					$("#page_config #form_config #message").text("ERROR: Fill all required fields")
-							.attr("rel", "localize[error.fill-all]").translate().fadeIn('fast');
-					return false;
+				// Defaults
+				$(document).on('click', '#page_config #btn_default', function() {
+					self.data.config.setDefaults();
+					setValues();
+				});
+
+				function setValues() {
+
+					$("#page_config input[name=fld_language]").each(function(i, item) {
+						$(item).attr("checked", $(item).val() == self.data.config.values.language)
+								.checkboxradio("refresh");
+					});
+
+					$("#page_config input[name=fld_linktype]").each(function(i, item) {
+						$(item).attr("checked", $(item).val() == self.data.config.values.linkType)
+								.checkboxradio("refresh");
+					});
+
 				}
 
-				// Get current values
-				$("#page_config input[name=fld_language]").each(function(i, item) {
-					if ($(item).attr("checked")) {
-						self.data.config.values.language = $(item).val();
-					}
+				$(document).ready(function() {
+					$('#page_config #form_config').submit(function(event) {
+
+						event.preventDefault();
+						var err = false;
+
+						// Reset errors
+						$("#page_config #form_config label").removeClass('error');
+						$("#page_config #form_config #message").text('').hide();
+
+						// Validation: all fields required
+						$("#page_config #form_config input").reverse().each(function(index, field) {
+							if ($(field).val() == null || $(field).val() == '') {
+								$(field).prev().addClass('error');
+								$(field).focus();
+								err = true;
+							}
+						});
+
+						if (err) {
+							$("#page_config #form_config #message").text("ERROR: Fill all required fields")
+									.attr("rel", "localize[error.fill-all]").translate().fadeIn('fast');
+							return false;
+						}
+
+						// Get current values
+						$("#page_config input[name=fld_language]").each(function(i, item) {
+							if ($(item).attr("checked")) {
+								self.data.config.values.language = $(item).val();
+							}
+						});
+
+						$("#page_config input[name=fld_linktype]").each(function(i, item) {
+							if ($(item).attr("checked")) {
+								self.data.config.values.linkType = $(item).val();
+							}
+						});
+
+						// Save values
+						self.data.config.save();
+
+						// Reload the whole html to apply the new settings (especially, the language change)
+						var url = $.mobile.path.parseUrl(window.location.href);
+						window.location.href = url.hrefNoSearch;
+
+						// Must return false to avoid real submission
+						return false;
+					});
 				});
-
-				$("#page_config input[name=fld_linktype]").each(function(i, item) {
-					if ($(item).attr("checked")) {
-						self.data.config.values.linkType = $(item).val();
-					}
-				});
-
-				// Save values
-				self.data.config.save();
-
-				// Reload the whole html to apply the new settings (especially, the language change)
-				var url = $.mobile.path.parseUrl(window.location.href);
-				window.location.href = url.hrefNoSearch;
-
-				// Must return false to avoid real submission
-				return false;
-			});
-		});
-	})();
+			})();
 })($, Mags.Tvhv);
 
 /*******************************************************************************
@@ -720,6 +775,7 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 				this.isLoaded = !!(this.channelTags && this.channels && this.epg);
 				if (this.isLoaded && this.isLoading) {
 					this.isLoading = false;
+					self.data.cache.clear();
 					$(document).trigger('dataloaded');
 				}
 			},
@@ -902,12 +958,9 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 			var epg = this.findEpgByChannel(channelid);
 
 			var result = null;
-			var currDate = new Date();
+			var me = this;
 			$.each(epg.entries, function(i, entry) {
-				var start = new Date(entry.start * 1000);
-				var end = new Date(entry.end * 1000);
-				if ((start.getTime() <= currDate.getTime())
-						&& (currDate.getTime() <= end.getTime())) {
+				if (me.epgEntryIsCurrent(entry)) {
 					result = entry;
 					return false;
 				}
@@ -915,30 +968,46 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 			return result;
 		},
+		
+		/*
+		 * Tell if an EPG entry is current
+		 */
+		epgEntryIsCurrent : function(entry) {
+			var currDateTime = (new Date()).getTime();
+			var startTime = (new Date(entry.start * 1000)).getTime();
+			var endTime = (new Date(entry.end * 1000)).getTime();
+			
+			if ((startTime <= currDateTime) && (currDateTime <= endTime)) {
+				return true;
+			}
+			
+			return false;
+		},
 
 		/*
 		 * Return the next EPG info for a channel
 		 */
 		findEpgNextByChannel : function(channelid, currentEpgEntry) {
-			var currEnd = new Date();
+			var currEndTime = (new Date()).getTime();
 
 			if (currentEpgEntry) {
-				currEnd = new Date(currentEpgEntry.end * 1000);
+				currEndTime = (new Date(currentEpgEntry.end * 1000)).getTime();
 			}
 
 			var result = null;
 			var resultStart = new Date();
 			resultStart.setDate(resultStart.getDate() + 1);
-			var currDate = new Date();
+			var currDateTime = (new Date()).getTime();
 
 			var epg = this.findEpgByChannel(channelid);
 
+			var startTime;
 			$.each(epg.entries, function(i, entry) {
-				var start = new Date(entry.start * 1000);
-				if (start.getTime() > currDate.getTime() && start.getTime() >= currEnd.getTime()) {
-					if (start.getTime() < resultStart) {
+				startTime = (new Date(entry.start * 1000)).getTime();
+				if (startTime > currDateTime && startTime >= currEndTime) {
+					if (startTime < resultStart) {
 						result = entry;
-						resultStart = start.getTime();
+						resultStart = startTime;
 						return false;
 					}
 				}
@@ -949,9 +1018,9 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 		/*
 		 * Return the stream url for a channel
-		 */  
+		 */
 		getChannelStreamUrl : function(chid) {
-			if (self.data.config.values.linkType  == 'stream') {
+			if (self.data.config.values.linkType == 'stream') {
 				return this.serverUrl + '/stream/channelid/' + chid;
 			}
 
@@ -970,32 +1039,37 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 		_item : function(epgEntry, displayRemaining) {
 
-			var epg = '<h4 class="epg-title">' + epgEntry.title + '</h4>';
+			var epg = [];
 
-			epg += '<h5 class="epg-entry">'
-					+ '<span class="epg-duration">['
-					+ Mags.Tools.getDisplayDuration(epgEntry.duration)
-					+ ']</span>'
-					+ '<span class="epg-start">'
-					+ Mags.Tools.getDisplayTime(epgEntry.start)
-					+ '</span>'
-					+ '<span class="epg-bar">'
-					+ '<span class="epg-barc" style="width:'
-					+ Mags.Tools.getElapsedDuration(epgEntry.start, epgEntry.end, 80)
-					+ 'px;">&nbsp;'
-					+ '</span></span>'
-					+ '<span class="epg-end">'
-					+ Mags.Tools.getDisplayTime(epgEntry.end)
-					+ '</span>';
+			epg.push('<h4 class="epg-title">' + epgEntry.title + '</h4>');
+
+			epg.push('<h5 class="epg-entry">');
+			epg.push('<span class="epg-duration">[');
+			epg.push(Mags.Tools.getDisplayDuration(epgEntry.duration));
+			epg.push(']</span>');
+
+			epg.push('<span class="epg-start">');
+			epg.push(Mags.Tools.getDisplayTime(epgEntry.start));
+			epg.push('</span>');
+
+			epg.push('<span class="epg-bar">');
+			epg.push('<span class="epg-barc" style="width:');
+			epg.push(Mags.Tools.getElapsedDuration(epgEntry.start, epgEntry.end, 80));
+			epg.push('px;">&nbsp;');
+			epg.push('</span></span>');
+
+			epg.push('<span class="epg-end">');
+			epg.push(Mags.Tools.getDisplayTime(epgEntry.end));
+			epg.push('</span>');
 
 			if (displayRemaining) {
-				epg += '<span class="epg-remain">['
-						+ Mags.Tools.getDisplayRemaining(epgEntry.start, epgEntry.end)
-						+ ']</span>';
+				epg.push('<span class="epg-remain">[');
+				epg.push(Mags.Tools.getDisplayRemaining(epgEntry.start, epgEntry.end));
+				epg.push(']</span>');
 			}
-			epg += '</h5>';
+			epg.push('</h5>');
 
-			return epg;
+			return epg.join('');
 		},
 
 		current : function(epgEntry, showDescription) {
