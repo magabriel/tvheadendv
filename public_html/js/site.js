@@ -33,6 +33,16 @@ Mags.Tvhv.init = Mags.Tvhv.init || {};
 			 */
 			$.setLanguage(self.data.config.values.language);
 			$("body").translate();
+
+			// Swipe navigation
+			$(document).on('swipeleft', function(event) {
+				window.history.forward();
+				event.preventDefault();
+			});
+			$(document).on('swiperight', function(event) {
+				window.history.back();
+				event.preventDefault();
+			});
 		});
 
 		/*
@@ -43,6 +53,8 @@ Mags.Tvhv.init = Mags.Tvhv.init || {};
 
 			// UI defaults
 			$.mobile.loader.prototype.options.theme = "a";
+			// Avoid ots of issues with transitions :(
+			$.mobile.defaultPageTransition = 'none';
 
 			// Load data
 			self.helpers.tvheadend.init();
@@ -212,13 +224,18 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 	(self.pages.channeltags = function() {
 
 		// Init page contents
-		$(document).on('pagebeforeshow', '#page_channeltags', function(event) {
-			console.debug('page_channeltags.pagebeforeshow');
+		$(document).on('pageshow', '#page_channeltags', function(event) {
+			console.debug('page_channeltags.pageshow');
+
+			if ($('#page_channeltags .list_channeltags li').length > 1) {
+				// The list is already filled
+				return;
+			}
 
 			// Fill the list asynchronously
 			self.helpers.pageLoading.show();
 
-			var listFiller = new Mags.Tools.ListFiller($(".list_channeltags"));
+			var listFiller = new Mags.Tools.ListFiller($("#page_channeltags .list_channeltags"));
 
 			$.each(self.helpers.tvheadend.data.channelTags.entries, function(i, tag) {
 				listFiller.addItem(tag, function(tag) {
@@ -250,15 +267,23 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 			function() {
 
 				// Init page contents
-				$(document).on('pagebeforeshow', '#page_channels', function(e, data) {
-					console.debug('page_channels.pagebeforeshow');
+				$(document).on('pageshow', '#page_channels', function(e, data) {
+					console.debug('page_channels.pageshow');
 
-					// Do not fill list if coming back from detail
-					if (data
-							&& data.prevPage[0]
-							&& data.prevPage[0].dataset
-							&& data.prevPage[0].dataset.url == 'page_epgevent') {
-						return;
+					if ($('#page_channels .list_channels li').length > 1) {
+						// The list is already filled
+						if ($.mobile.pageData && $.mobile.pageData.channeltag) {
+							// We want to show only a channeltag's channels
+							if ($.mobile.pageData.channeltag == self.data.cache.channelsList.channelTag) {
+								// And its the same as before
+								return;
+							}
+						} else {
+							if (!self.data.cache.channelsList.channelTag) {
+								// It does not contain only a channeltag's channel
+								return;
+							}
+						}
 					}
 
 					fillPage();
@@ -294,7 +319,7 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 					// Look for parameters
 					if ($.mobile.pageData && $.mobile.pageData.channeltag) {
 						newChannelTag = $.mobile.pageData.channeltag;
-						
+
 						// Show channels for that channeltag
 						var channelTag = self.helpers.tvheadend.findChannelTag(newChannelTag);
 						$("#page_channels #txt_channeltag").show().html(channelTag.name);
@@ -347,7 +372,7 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 					// Fill the list asynchronously
 					self.helpers.pageLoading.show();
 
-					var listFiller = new Mags.Tools.ListFiller($(".list_channels"));
+					var listFiller = new Mags.Tools.ListFiller($("#page_channels .list_channels"));
 
 					$.each(entries, function(i, channel) {
 						listFiller.addItem(channel, function(channel) {
@@ -385,7 +410,7 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 							var item = [];
 							item.push('<li>');
 
-							// Crate the list item
+							// Create the list item
 							channel.number = channel.number ? channel.number : '';
 							item.push('<a href="' + epgInfoLink + '">');
 							item.push('<h3 class="channel-name-block">');
@@ -425,14 +450,11 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 				/* 
 				 * Init page contents
 				 */
-				$(document).on('pagebeforeshow', '#page_epg', function(e, data) {
-					console.debug('page_epg.pagebeforeshow');
+				$(document).on('pageshow', '#page_epg', function(e, data) {
+					console.debug('page_epg.pageshow');
 
-					// Do not fill list if coming back from detail
-					if (data
-							&& data.prevPage[0]
-							&& data.prevPage[0].dataset
-							&& data.prevPage[0].dataset.url == 'page_epgevent') {
+					if ($('#page_epg .list_epg li').length > 1) {
+						// The list is already filled
 						return;
 					}
 
@@ -500,14 +522,22 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 					// Current channel (for sorting by channel)
 					var currChannel = '';
 
+					var currTimeDesc = '';
+
 					// Fill the list asynchronously
 					self.helpers.pageLoading.show();
 
 					var listFiller = new Mags.Tools.ListFiller($('#page_epg .list_epg'));
 
+					var inSublist = false;
+
 					$.each(entries, function(i, epgEntry) {
 						listFiller.addItem(epgEntry, function(epgEntry) {
 
+							if (self.helpers.tvheadend.epgEntryHasFinished(epgEntry)) {
+								return '';
+							}
+							
 							var item = [];
 
 							var epg = '';
@@ -516,18 +546,52 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 
 							if (sort == 'channel') {
 								if (epgEntry.channelid != currChannel) {
-									item.push('<li data-role="list-divider" class="channel-group">');
+
+									// Finish channel sublist
+									if (inSublist) {
+										item.push('</ul>');
+										item.push('</li>');
+										inSublist = false;
+									}
+
+									item.push('<li  class="channel-group">');
+
+									item.push('<div>');
 									item.push('<span class="channel-icon">');
 									if (channel.ch_icon || '') {
-										item.push('<img src="');
-										item.push(channel.ch_icon);
-										item.push('" onerror="this.style.display = \'none\'">');
+										item.push('<img src="'
+												+ channel.ch_icon
+												+ '" onerror="this.style.display = \'none\'">');
 									}
 									item.push('</span>');
-									item.push('<span class="channel-name">');
-									item.push(epgEntry.channel);
-									item.push('</span></li>');
+									item.push('<span class="channel-name">' + epgEntry.channel + '</span>');
+									item.push('</div>');
+									//item.push('</li>');
 									currChannel = epgEntry.channelid;
+
+									// Start channel sublist
+									item.push('<ul>');
+									inSublist = true;
+								}
+							} else {
+								// By date/time
+								var timeDesc = self.helpers.tvheadend.epgTimeDesc(epgEntry);
+								if (timeDesc != currTimeDesc) {
+									// Finish timedesc sublist
+									if (inSublist) {
+										item.push('</ul>');
+										item.push('</li>');
+										inSublist = false;
+									}
+
+									item.push('<li class="channel-group">');
+									item.push('<div>' + $.translate(timeDesc) + '</div>');
+
+									currTimeDesc = timeDesc;
+
+									// Start timedesc sublist
+									item.push('<ul>');
+									inSublist = true;
 								}
 							}
 
@@ -545,50 +609,45 @@ Mags.Tvhv.pages = Mags.Tvhv.pages || {};
 
 							var epgInfoLink = '#page_epgevent?' + epgPar.join('&');
 
-							// Create the stream url link
-							var streamLink = self.helpers.tvheadend.getChannelStreamUrl(epgEntry.channelid);
-
+							// Create the list item
 							item.push('<li>');
 
 							if (sort == 'channel') {
-								item.push('<a href="');
-								item.push(epgInfoLink);
-								item.push('">');
-								item.push(epg);
-								item.push('</a>');
+								item.push('<a href="' + epgInfoLink + '">' + epg + '</a>');
 							} else { // 'date'
-								item.push('<a href="');
-								item.push(epgInfoLink);
-								item.push('">');
+								item.push('<a href="' + epgInfoLink + '">');
 								item.push('<h3 class="channel-name-block">');
 								item.push('<span class="channel-icon">');
 								if (channel.ch_icon || '') {
-									item.push('<img src="');
-									item.push(channel.ch_icon);
-									item.push('" onerror="this.style.display = \'none\'">');
+									item.push('<img src="'
+											+ channel.ch_icon
+											+ '" onerror="this.style.display = \'none\'">');
 								}
 								item.push('</span>');
-								item.push('<span class="channel-name">');
-								item.push(epgEntry.channel);
-								item.push('</span></h3>');
-								item.push(epg);
-								item.push('</a>');
+								item.push('<span class="channel-name">' + epgEntry.channel + '</span></h3>');
+								item.push(epg + '</a>');
 							}
 
-							item.push('<a href="');
-							item.push(streamLink);
-							item.push('" target="_blank" data-split-icon="info" />');
-
+							// Create the stream url link
+							if (self.helpers.tvheadend.epgEntryIsCurrent(epgEntry)) {
+								var streamLink = self.helpers.tvheadend.getChannelStreamUrl(epgEntry.channelid);
+								item.push('<a href="' + streamLink + '" target="_blank" data-split-icon="info" />');
+							}
 							item.push('</li>');
 
 							return item.join('');
 						});
+
+						// Finish channel sublist
+						if (inSublist) {
+							item.push('</ul>');
+						}
 					});
 
 					listFiller.run(function() {
+						$('#page_epg .list_epg').translate();
 						self.helpers.pageLoading.hide();
 					});
-
 				}
 
 			})();
@@ -968,7 +1027,7 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 
 			return result;
 		},
-		
+
 		/*
 		 * Tell if an EPG entry is current
 		 */
@@ -976,12 +1035,19 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 			var currDateTime = (new Date()).getTime();
 			var startTime = (new Date(entry.start * 1000)).getTime();
 			var endTime = (new Date(entry.end * 1000)).getTime();
-			
+
 			if ((startTime <= currDateTime) && (currDateTime <= endTime)) {
 				return true;
 			}
-			
+
 			return false;
+		},
+		
+		epgEntryHasFinished : function(entry) {
+			var currDateTime = (new Date()).getTime();
+			var endTime = (new Date(entry.end * 1000)).getTime();
+
+			return currDateTime > endTime;
 		},
 
 		/*
@@ -1014,6 +1080,39 @@ Mags.Tvhv.helpers = Mags.Tvhv.helpers || {};
 			});
 
 			return result;
+		},
+
+		/**
+		 * Return a text representationof the start time in relation to current
+		 * time
+		 * 
+		 * @param entry
+		 * @returns {String}
+		 */
+		epgTimeDesc : function(entry) {
+			if (this.epgEntryIsCurrent(entry)) {
+				return 'Now playing';
+			}
+
+			var currDateTime = (new Date()).getTime();
+			var startTime = (new Date(entry.start * 1000)).getTime();
+			var endTime = (new Date(entry.end * 1000)).getTime();
+
+			if (endTime < currDateTime) {
+				return "Finished";
+			}
+			
+			var diffMins = (startTime - currDateTime) / 60 / 1000;
+
+			if (diffMins <= 10) {
+				return "About to start";
+			} else if (diffMins <= 30) {
+				return "Starts in less than 30 minutes";
+			} else if (diffMins <= 60) {
+				return "Starts during next hour";
+			}
+
+			return "Later";
 		},
 
 		/*

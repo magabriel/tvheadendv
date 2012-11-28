@@ -12,7 +12,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TVHeadend viewer</title>
 <link rel="shortcut icon" href="favicon.ico">
-<link rel="stylesheet" href="js/jquery/jquery.mobile-1.2.0.min.css" />
+<link rel="stylesheet" href="css/jquery/jquery.mobile-1.2.0.min.css" />
 <link rel="stylesheet" href="css/styles.css" />
 
 <script src="js/jquery/jquery-1.8.3.min.js"></script>
@@ -22,6 +22,7 @@
 <script src="js/site.js"></script>
 <script src="js/jquery/jquery.mobile-1.2.0.min.js"></script>
 <script src="js/jquery/jqm.page.params.js"></script>
+
 </head>
 
 <body>
@@ -280,13 +281,13 @@
                         <input type="radio" name="fld_linktype" id="fld_linktype_stream" value="stream" />
                         <label for="fld_linktype_stream">
                             <h3 class="ui-li-heading">Stream</h3>
-                            <p class="ui-li-desc" rel="localize[stream-desctiption]">This is the better value for mobile devices.</p>
+                            <p class="ui-li-desc" rel="localize[stream-description]">This is the better value for mobile devices.</p>
                         </label>
                         
                         <input type="radio" name="fld_linktype" id="fld_linktype_playlist" value="playlist" />
                         <label for="fld_linktype_playlist">
                             <h3 class="ui-li-heading">Playlist</h3>
-                            <p class="ui-li-desc" rel="localize[playlist-desctiption]">Try this value if "stream" doesn't work.</p>
+                            <p class="ui-li-desc" rel="localize[playlist-description]">Try this value if "stream" doesn't work.</p>
                         </label>
                     </fieldset>
                 </div>
@@ -328,9 +329,19 @@
 
         <div data-role="content" id="content">
             <h3>Tvheadend Viewer</h3>
-            <p>&copy; 2012 Miguel Angel Gabriel and contributors</p>
+            <p>&copy; 2012 Miguel Angel Gabriel.</p>
             <p rel="localize[all-rights-reserved]">All rights reserved</p>
             <p rel="localize[license]">Released under the GNU GPL V3.</p>
+            
+            <h4>Software licences</h4>
+            <dl>
+                <dt><a href="http://github.com/gamache/DSt">DST</a></dt>
+                    <dd>Copyright (c) 2010 Pete Gamache.</dd>
+                <dt><a href="https://github.com/jblas/jquery-mobile-plugins/tree/master/page-params">jqm.page.params</a></dt>
+                    <dd>Copyright (c) 2011, Kin Blas.</dd>
+                <dt><a href="https://github.com/coderifous/jquery-localize">jQuery Localize<</a></dt>
+                    <dd>Copyright (c) 2008, Jim Garvin.</dd>
+            </dl>
         </div>
         <!-- /content -->
 

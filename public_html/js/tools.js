@@ -222,7 +222,9 @@ Mags.Tools = Mags.Tools || {};
 		run : function(fnWrapUp) {
 			// Push a task to append all the items to the listview and refresh it
 			this.tasks.push([ function(me) {
-				me.$list.empty().append(me.items.join('')).listview('refresh')
+				me.$list.empty();
+				me.$list.append(me.items.join(''));
+				me.$list.listview('refresh')
 			}, this ]);
 			// Push the real wrapup function
 			this.tasks.push(fnWrapUp);
@@ -338,9 +340,19 @@ Mags.Tools = Mags.Tools || {};
 	$.fn.translate = function() {
 		$items = this.find("[rel*=localize]");
 		if ($items.length == 0) {
-			$items = this;
+			return this;
 		}
 		return $items.localize("lang", options);
+	};
+	
+	/*
+	 * Translate a item
+	 */
+	$.translate = function(item) {
+		var $elem = $("<div/>").attr("rel", "localize["+item+"]");
+		$('<p/>').append($elem).translate();
+		var value = $elem.text();
+		return value;
 	};
 
 	/*

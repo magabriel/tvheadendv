@@ -8,7 +8,8 @@
 	margin: 0 0;
 }
 
-/* Radiobuttons and checkboxes with descriptions
+/* 
+ * Radiobuttons and checkboxes with descriptions
  */
 .ui-checkbox .ui-li-heading, 
 .ui-radio .ui-li-heading {
@@ -28,7 +29,8 @@
 	margin-top: 12px !important;
 }
 
-/* EPG item
+/* 
+ * EPG item
  */
 .epg-title {
     font-size: 1em;
@@ -74,7 +76,9 @@
 	margin:0;
 }
 
-
+/* 
+ * Page channels
+ */
 #page_channels .channel-name-block {
 	font-size: 1.2em;
 	line-height: 1.9em;
@@ -108,6 +112,9 @@
 	margin-left: .1em;
 	}
 
+/*
+ * "Loading" widget
+ */
 .pageLoading {
 	width: 100%;
 	height: 100%;
@@ -121,6 +128,9 @@
 	z-index: 1501;
 }
 
+/* 
+ * Messages
+ */
 label.error {
 	color: #FF0000;
 	font-weight: bold;
@@ -133,9 +143,10 @@ label.error {
 	padding: .5em;
 }
 
-
+/*
+ * Page EPG
+ */
 #page_epg .channel-group {
-	height: 2em;
 	font-size: 1em;
 }
 
@@ -166,6 +177,9 @@ label.error {
     float: left;
     }
 
+/*
+ * Channel icon
+ */
 .channel-icon {
     display: inline-block;
     font-size: 1em;
@@ -180,6 +194,9 @@ label.error {
 	margin-left: .2em;
     }
 
+/*
+ * Page EPG event
+ */
 #page_epgevent .channel-name-block {
     font-size: 1.2em;
     display: inline-block;
@@ -208,3 +225,28 @@ label.error {
     border: 1px solid #bbb;
 }
 
+/*
+ * Default white icons were missing in mobile devices. Forced black icons to solve this problem,
+ * but this introduces inconsistency between the desktop (white icons) and mobile browsers (black icons).
+ */
+@media only screen and (-webkit-min-device-pixel-ratio: 1.5),
+       only screen and (min--moz-device-pixel-ratio: 1.5),
+       only screen and (min-resolution: 240dpi) {
+	
+	.ui-icon-plus, .ui-icon-minus, .ui-icon-delete, .ui-icon-arrow-r,
+	.ui-icon-arrow-l, .ui-icon-arrow-u, .ui-icon-arrow-d, .ui-icon-check,
+	.ui-icon-gear, .ui-icon-refresh, .ui-icon-forward, .ui-icon-back,
+	.ui-icon-grid, .ui-icon-star, .ui-icon-alert, .ui-icon-info, .ui-icon-home, .ui-icon-search, .ui-icon-searchfield:after, 
+	.ui-icon-checkbox-off, .ui-icon-checkbox-on, .ui-icon-radio-off, .ui-icon-radio-on {
+		background-image: url(images/icons-36-black.png);
+		background-color: #ccc;
+	}
+}
+
+/*
+ * Misc
+ */
+dt {
+	font-weight: bold;
+}	
+}

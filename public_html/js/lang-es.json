@@ -19,10 +19,19 @@
     "port": "Puerto",
     "link-type": "Tipo de enlace",
     "language": "Idioma",
+    "stream-description": "Este es el valor recomendado para dispositivos móviles",
+    "playlist-description": "Pruebe este valor si \"stream\" no funciona",
     "defaults": "Por defecto",
     "save": "Guardar",
     "epg-event": "Evento", 
     "watch-channel": "Ver canal",
+    
+    "Now playing": "Ahora",
+    "About to start": "A punto de empezar",
+    "Starts in less than 30 minutes": "Empieza en menos de 30 minutos",
+    "Starts during next hour": "Empieza en la próxima hora",
+    "Later": "Más tarde",
+    
     "error": {
        "fill-all": "ERROR: Rellene todos los campos",
        "invalid-ip": "ERROR: No es una IP válida",
